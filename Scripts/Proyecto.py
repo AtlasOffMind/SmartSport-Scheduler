@@ -74,6 +74,7 @@ actual_resource = [
                    ]
 events = {}
 
+# Añadir eventos
 def Add_Events(date, event_name, using_resources):
     
     if  Is_Valid(date,using_resources):
@@ -93,7 +94,8 @@ def Add_Events(date, event_name, using_resources):
             events[event_name] = (d,r)
     else:
         print("That's not a valid event")
-        
+
+# Remover eventos     
 def Remove_Events(event_name):
     if events.get(event_name):
         inpt = input("Do you want to remove this event, yes/no: ")
@@ -105,21 +107,56 @@ def Remove_Events(event_name):
             
             del events[event_name]
         
+def Get_Event_List():
+    sorted_events = sort_by_date()
+    return sorted_events
             
 #TODO crear el metodo este de revision
 def Is_Valid(date, using_resources):
     return True
 
-
-Add_Events("1/2/25", "Partido de Football", actual_resource)
-print(events)
-for resource,am in actual_resource:
-    print(f"{resource} {resourcers[resource]}")
+def sort_by_date():
+    date_lst = []
+    value_lst = []
+    keys_lst = [*events]
+    for i,value in enumerate([*events.values()]):
+        date,lst = value
+        date_lst.append((date, i))
+        value_lst.append(lst)
+        
+   #TODO aun no he creado el criterio para ordenar por fechas
+    date_lst.sort() 
     
-print(" ")
+    temp={}
+    for tple in date_lst:
+        date, i = tple
+        (k,d,r)= keys_lst[i], date, value_lst[i]
+        temp[k] = (d,r)
+    
+    return temp
 
-Remove_Events("Partido de Football")
+def See_details(event_name):
+     print(f"Name of the event : {event_name}")
+     print(f"Date of the event : {events[event_name][0]}")
+     print("Resources details: ")
+     for i in events[event_name][1]:
+        print(f"  {i[0]}  =>  {i[1]}")
+     
 
-print(events)
-for resource,am in actual_resource:
-    print(f"{resource} {resourcers[resource]}")
+# for i in range(0,5):
+Add_Events("1/2/25", "Football", actual_resource)
+# print(events)
+# for resource,am in actual_resource:
+#     print(f"{resource} {resourcers[resource]}")
+    
+# print(" ")
+
+# Remove_Events("Partido de Football")
+
+# print(events)
+# for resource,am in actual_resource:
+#     print(f"{resource} {resourcers[resource]}")
+
+See_details("Football")
+
+
