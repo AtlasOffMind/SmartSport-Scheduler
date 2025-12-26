@@ -1,14 +1,14 @@
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta, time
 from typing import Dict
-
+# import uuid
+# uuid.uuid4()
 
 # Recursos
 @dataclass
 class Resource:
     name: str
     amount: int
-
 
 # Eventos
 @dataclass
@@ -18,20 +18,78 @@ class Event:
     end: datetime
     resources: dict[str, Resource]
 
-#Planificador
+# Planificador
 @dataclass
 class Planner:
     # Estos son los recursos globales
     resources: dict[str, Resource] = field(default_factory=dict)
     # Estos son los eventos globales
     events: dict[str, Event] = field(default_factory=dict)
+    
+    # Reglas de restricciones: co-requisitos (requires) y exclusiones (excludes)
+    requires: dict[str, list[str]] = field(default_factory=dict)
+    excludes: dict[str, list[str]] = field(default_factory=dict)
 
-    def Is_Valid(self, start: datetime, end: datetime, using_resources) -> bool:
+    def is_valid(
+                self,
+                start: datetime,
+                end: datetime,
+                using_resources: dict[str, Resource] | None = None,
+                ) -> bool:
+        
+        """Validación completa:
+
+       
+        - comprueba solapamientos temporales y suma de recursos ocupados
+        - aplica reglas de inclusión (requires) y exclusión (excludes)
+        """
+        if using_resources is None:
+            return False
+
+        if not isinstance(start, datetime) or not isinstance(end, datetime):
+            return False
+        if start >= end:
+            return False
+
+        for name in using_resources.keys():
+            # existencia del recurso en el inventario
+            if name not in self.resources:
+                return False
+            if self.resources[name].amount <= 0 or self.resources[name].amount < using_resources[name].amount:
+                return False
+            
+            #TODO
+            # verificacion de los co-requisitos
+            for req in self.requires.get(name, []):
+                if req not in using_resources:
+                    return False
+                
+            # TODO
+            # verificacion de las exclusiones
+            for ex in self.excludes.get(name, []):
+                if ex in using_resources:
+                    return False
+
+        # Calcular uso actual por recurso en eventos que se solapan con (start,end)
+        used: dict[str, int] = {}
+        for ev in self.events.values():    
+            if not (ev.end <= start or ev.start >= end)  :
+                for rname, r in ev.resources.items():
+                    used[rname] = used.get(rname, 0) + r.amount
+
+        # Verificar que para cada recurso solicitado, la suma (usado + solicitado) <= inventario
+        for name, req in using_resources.items():
+            req_amount = req.amount 
+            avail = self.resources.get(name).amount
+            already = used.get(name, 0)
+            if already + req_amount > avail:
+                return False
+
         return True
 
     # Añadir eventos
     def add_events(self, event: Event):
-        if self.Is_Valid(event.start, event.end, event.resources):
+        if self.is_valid(event.start, event.end, event.resources):
 
             for name, r in event.resources.items():
                 self.resources[name].amount -= r.amount
@@ -46,32 +104,33 @@ class Planner:
 
         else:
             print("That's not a valid event")
-            
 
         # Remover eventos
-    
+
     # Remover eventos
-    def Remove_Events(self, event_name):
+    def remove_events(self, event_name):
         if self.events.get(event_name):
             inpt = input("Do you want to remove this event, yes/no: ")
             if inpt == "yes":
                 used_resourcers = self.events[event_name].resources
 
-                for resource,r in used_resourcers.items():
+                for resource, r in used_resourcers.items():
                     self.resources[resource].amount += r.amount
 
                 del self.events[event_name]
-    
-    # Ver detalles           
-    def See_details(self, event_name):
+
+    # Ver detalles
+    def see_details(self, event_name):
         if self.events.get(event_name):
             print(f"Name of the event : {event_name}")
-            print(f"Date of the event : start: {self.events[event_name].start} \r\n                    end: {self.events[event_name].end}")
-            
-            print("Resources details: ") 
+            print(
+                f"Date of the event : start: {self.events[event_name].start} \r\n                    end: {self.events[event_name].end}"
+            )
+
+            print("Resources details: ")
             for r in self.events[event_name].resources.values():
                 print(f"  {r.name}  =>  {r.amount}")
-                
+
         else:
             print("That Event dosen't exist")
 
@@ -79,44 +138,54 @@ class Planner:
     def get_event_list(self) -> list:
         result = []
         for key, ev in self.events.items():
-            resources = [{"name": rn, "amount": r.amount} for rn, r in ev.resources.items()]
-            result.append({"key": key, 
-                           "name": ev.name, 
-                           "start": ev.start, 
-                           "end": ev.end, 
-                           "resources": resources})
-            
+            resources = [
+                {"name": rn, "amount": r.amount} for rn, r in ev.resources.items()
+            ]
+            result.append(
+                {
+                    "key": key,
+                    "name": ev.name,
+                    "start": ev.start,
+                    "end": ev.end,
+                    "resources": resources,
+                }
+            )
+
         self.sort_by_date(result)
         return result
-    
+
     # Metodo para hacer una tabla bonita para la consola
     def events_table(self) -> str:
         rows = []
         for ev in self.get_event_list():
             res_lines = [f"{r['name']} ({r['amount']})" for r in ev["resources"]]
             res_cell = "\n".join(res_lines) if res_lines else "-"
-            rows.append([ev["name"], ev["start"].isoformat(), ev["end"].isoformat(), res_cell])
+            rows.append(
+                [ev["name"], ev["start"].isoformat(), ev["end"].isoformat(), res_cell]
+            )
 
         headers = ["Evento", "Start", "End", "Recursos (nombre (cantidad))"]
-        
+
         # calcular anchos
         cols = list(zip(*([headers] + rows)))
         widths = [max(len(str(cell)) for cell in col) for col in cols]
 
         lines = []
-        
+
         # header
         lines.append(" | ".join(h.ljust(w) for h, w in zip(headers, widths)))
         lines.append("-+-".join("-" * w for w in widths))
-        
+
         # filas (soportan celdas multilinea)
         for row in rows:
             # dividir por líneas y alinear por filas
             cell_lines = [str(c).splitlines() for c in row]
             max_lines = max(len(cl) for cl in cell_lines)
             for i in range(max_lines):
-                parts = [ (cl[i] if i < len(cl) else "").ljust(w)
-                        for cl, w in zip(cell_lines, widths) ]
+                parts = [
+                    (cl[i] if i < len(cl) else "").ljust(w)
+                    for cl, w in zip(cell_lines, widths)
+                ]
                 lines.append(" | ".join(parts))
             lines.append("-+-".join("-" * w for w in widths))
         return "\n".join(lines)
@@ -126,38 +195,53 @@ class Planner:
         lst.sort(key=lambda e: e["start"])
 
     # Obtener disponibilidad
-    def find_next_slot_step(self, 
-                            duration: timedelta, 
+    def find_next_slot_step(
+                            self,
+                            duration: time,
                             from_dt: datetime | None = None,
-                            max_search: timedelta = timedelta(days=30),
-                            resources_needed: dict[str, Resource] = None):
-        
+                            resources_needed: dict[str, Resource] = None,
+                            )-> tuple[datetime,datetime]:
+
         step: timedelta = timedelta(minutes=30)
-        
+        max_search: timedelta = timedelta(days=30)
+
+        question = input(
+            "Set de number of days do you want search (default search is 30 days): "
+        )
+
+        try:
+            days = int(question)
+            if days <= 0:
+                print("Amount not valid")
+                return None
+            else:
+                max_search = timedelta(days)
+
+        except ValueError:
+            print("Not valid")
+            return None
+
         if from_dt is None:
             from_dt = datetime.now()
-        
-        open_time = time(7,0)
-        close_time = time(22,0)
-        end_limit = from_dt + max_search
+
+        open_time = time(7, 0)
+        close_time = time(22, 0)
         next_start = from_dt
-        
-        
+        end_limit = from_dt + max_search
+
         while next_start + duration <= end_limit:
             candidate_end = next_start + duration
-            
-        if self.is_valid(next_start, candidate_end, resources_needed or {}):
-            if next_start.hour >= open_time:
-                if candidate_end.hour <= close_time:
-                    return next_start, candidate_end
-        next_start += step
-        
+
+            if self.is_valid(next_start, candidate_end, resources_needed or {}):
+                if next_start.time() >= open_time:
+                    if candidate_end.time() < close_time:
+                        return next_start, candidate_end
+            next_start += step
+
         return None
 
 
-# import uuid
-# uuid.uuid4()
-
+# Recursos globales para cualkier instancia de mi Plannner
 raw_resources = {
     # Espacios
     "Cancha de Football": 1,
@@ -212,12 +296,18 @@ raw_resources = {
     "Trampolin": 3,
     "Estrado de Premiaciones": 4,
 }
-
 # Convertir a instancias de Resource
 global_resources = {
     name: Resource(name, amount) for name, amount in raw_resources.items()
 }
 
+
+
+
+
+
+
+# Casos de prueba
 raw_actual_resource = [
     ("Cancha de Football", 1),
     ("Pelota de Football", 3),
@@ -238,8 +328,8 @@ e = Event(
 )
 b = Event(
     "Partido de Footbal",
-    datetime(2025, 5, 7, 13, 0),
-    datetime(2025, 5, 8, 14, 0),
+    datetime(2025, 5, 7, 19, 0),
+    datetime(2025, 5, 8, 20, 0),
     actual_resources,
 )
 c = Event(
@@ -262,8 +352,11 @@ p.add_events(e)
 p.add_events(d)
 p.add_events(c)
 
-print(p.events_table())
-
-
-
-
+# print(p.events_table())
+print(
+    p.find_next_slot_step(
+        timedelta(0, 60 * 60),
+        datetime(2025, 5, 7, 10, 0),
+        {},
+    )
+)
