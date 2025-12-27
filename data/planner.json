@@ -1,0 +1,125 @@
+{
+  "resources": {
+    "Cancha de Tenis": {
+      "name": "Cancha de Tenis",
+      "amount": 1
+    }
+  },
+  "events": {},
+  "requires": {
+    "Cancha de Football": [
+      "Arbitro",
+      "Pelota de Football",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de FootSal": [
+      "Arbitro",
+      "Pelota de Footsal",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Basket (techada)": [
+      "Pelota de Basket",
+      "Arbitro"
+    ],
+    "Cancha de Basket (aire libre)": [
+      "Pelota de Basket",
+      "Arbitro"
+    ],
+    "Piscina Olimpica": [
+      "Salva Vidas",
+      "Personal de primeros auxilios"
+    ],
+    "Estadio de BaseBall": [
+      "Arbitro",
+      "Personal de primeros auxilios",
+      "Comentaristas",
+      "Pelota de Baseball",
+      "Bates de BaseBall",
+      "Guantes de BaseBall",
+      "Protectores de BaseBall"
+    ],
+    "Cancha de Boleyball": [
+      "Arbitro",
+      "Pelota de Boleyball",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Badmintong": [
+      "Arbitro",
+      "Pelota de Badmintong",
+      "Raquetas de Badmintong",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Cancha": [
+      "Arbitro",
+      "Pelota de Cancha",
+      "Raquetas de Cancha",
+      "Personal de primeros auxilios"
+    ],
+    "Ring de boxeo": [
+      "ArbitroGuantes de Boxeo",
+      "Cascos de Boxeo",
+      "Personal de primeros auxilios"
+    ],
+    "Pelota de Football": [
+      "Cancha de Football"
+    ],
+    "Pelota de Footsall": [
+      "Cancha de FootSal"
+    ],
+    "Pelota de Tenis": [
+      "Cancha de Tenis",
+      "Raquetas de Tenis"
+    ],
+    "Mesa de PingPong": [
+      "Raquetas de Tenis de Mesa",
+      "Pelota de Tenis de Mesa",
+      "Ned de Tenis de Mesa",
+      "Habitacion para juegos de mesa"
+    ],
+    "Cascos de Karate": [
+      "Protectores de Karate",
+      "Habitacion con Colchon"
+    ],
+    "Cascos de Taekwando": [
+      "Protectores de Taekwando",
+      "Habitacion con Colchon"
+    ],
+    "Sacos de Boxeo": [
+      "Guantes de Boxeo",
+      "Cascos de Boxeo"
+    ]
+  },
+  "excludes": {
+    "Piscina Olimpica": [
+      "Sacos de Boxeo",
+      "Estrado de Premiaciones"
+    ],
+    "Cascos de Karate": [
+      "Cascos de Taekwando",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Cascos de Taekwando": [
+      "Cascos de Karate",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Protectores de Taekwando": [
+      "Protectores de Karate",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Protectores de Karate": [
+      "Protectores de Taekwando",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Cascos de Boxeo": [
+      "Protectores de Taekwando",
+      "Cascos de Taekwando",
+      "Cascos de Karate",
+      "Protectores de Taekwando",
+      "Protectores de Karate"
+    ]
+  }
+}
