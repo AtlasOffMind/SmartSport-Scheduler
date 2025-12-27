@@ -287,8 +287,10 @@ class Planner:
     def sort_by_date(self, lst: list[dict[str,]]):
         lst.sort(key=lambda e: e["start"])
 
+    #TODO terminar de hacer esto bien
     # Obtener disponibilidad
     def find_next_slot_step(self) -> tuple[datetime, datetime]:
+        
         # Buscar el primer hueco libre (por defecto 1 hora) empezando hoy.
         duration = timedelta(hours=1)
         max_search_days = 30
@@ -297,7 +299,8 @@ class Planner:
         open_time = time(7, 0)
         close_time = time(22, 0)
 
-        now = datetime.now()
+        # now = datetime.now()
+        now = datetime(2025,12,20,8,0)
         start_date = now.date()
 
         # Pre-sort events by start for deterministic behavior
@@ -550,9 +553,9 @@ c = Event(
 
 # print(p.events_table())
 
-p.add_events(b)
-p.add_events(e)
-p.add_events(c)
+# p.add_events(b)
+# p.add_events(e)
+# p.add_events(c)
 
 # print(p.events_table())
 
@@ -584,7 +587,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-def planner_to_dict(planner):
+def planner_to_dict(planner: Planner):
     return {
         "resources": {
             name: {"name": r.name, "amount": r.amount}
@@ -652,4 +655,4 @@ def get_default_data_path() -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     return folder / "planner.json"
 
-save_planner(p, None)
+
