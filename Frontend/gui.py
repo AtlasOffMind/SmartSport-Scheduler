@@ -91,9 +91,8 @@ class PlannerGUI:
     # region Bottons
     def refresh(self):
         self.events_listbox.delete(0, tk.END)
-        
-        for name, ev in sorted(self.planner.events.items(), key=lambda t: t[1].start):
-            self.events_listbox.insert(tk.END,name)
+        for dct in self.planner.get_event_list():
+                self.events_listbox.insert(tk.END,dct["name"])
 
     def parse_datetime(self, text: str):
         try:
@@ -106,6 +105,8 @@ class PlannerGUI:
                     continue
         raise ValueError("Invalid datetime format")
 
+    #TODO corregir este metodo xq no llama al metodo del Planner. 
+    #      Ademas agregarle todas las opciones necesarias para crear un nuevo evento legal 
     def add_event_dialog(self):
         name = simpledialog.askstring("Event name", "Name:")
         if not name:
@@ -169,7 +170,8 @@ class PlannerGUI:
 
         ev = Event(name, start, end, resources)
         self.planner.events[name] = ev
-        self.refresh()
+        # TODO probar si el metodo refresh esta bien
+        # self.refresh()
 
     def delete_selected(self):
         sel = self.events_listbox.curselection()
@@ -186,7 +188,9 @@ class PlannerGUI:
                         self.planner._resources[rn].amount += r.amount
                 del self.planner.events[name]
                 self.refresh()
+                self._render_calendar()
 
+    #TODO probar verdaderamente este metodo hace lo q tiene q hacer
     def save(self):
         try:
             save_planner(self.planner, None)
@@ -194,6 +198,7 @@ class PlannerGUI:
         except Exception as ex:
             messagebox.showerror("Save error", str(ex))
 
+    #Creo q este metodo ya funciona
     def find_slot(self):
         res = self.planner.find_next_slot_step()
         if not res:
@@ -205,13 +210,14 @@ class PlannerGUI:
             f"{start.strftime('%Y-%m-%d %H:%M')} -> {end.strftime('%Y-%m-%d %H:%M')}",
         )
 
+    # Aprovado x Chayanne
     def view_selected(self):
         sel = self.events_listbox.curselection()
         if not sel:
             messagebox.showinfo("Details", "No event selected")
             return
         name = self.events_listbox.get(sel[0])
-        ev = self.planner.events.get(name)
+        ev = self.planner.see_details(name)
         if not ev:
             messagebox.showerror("Details", "Event not found")
             return
@@ -220,8 +226,6 @@ class PlannerGUI:
         resources = (
             "\n     ".join(f"{n}: {r.amount}" for n, r in ev.resources.items()) or "-"
         )
-
-        spaced_r = f"\n" + "    " + f"{resources}"
 
         messagebox.showinfo(
             "Event details",
@@ -253,7 +257,6 @@ class PlannerGUI:
         # grid for days
         self.days_grid = tk.Frame(self.calendar_frame)
         self.days_grid.pack(fill="both", padx=4, pady=4)
-
 
 
     def _render_calendar(self):
@@ -309,6 +312,7 @@ class PlannerGUI:
                 return True
         return False
 
+    # Aprovado x Chayanne
     def _on_day_click(self, dt: date):
         self.selected_date = dt
         for d, b in self.day_buttons.items():
@@ -316,10 +320,8 @@ class PlannerGUI:
         if dt in self.day_buttons:
             self.day_buttons[dt].configure(relief="sunken")
 
-        evs = [
-            ev
-            for ev in self.planner.events.values()
-            if ev.start.date() <= dt <= ev.end.date()
+        self.planner.sort_events()
+        evs = [ev for ev in self.planner.events.values() if ev.start.date() <= dt <= ev.end.date()
         ]
         if not evs:
             messagebox.showinfo(

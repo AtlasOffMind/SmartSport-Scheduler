@@ -142,12 +142,19 @@ class Planner:
         using_resources: dict[str, Resource] | None = None,
     ) -> bool:
 
+        day_start: datetime =  datetime(start.year, start.month, start.day, 7,0) 
+        day_end: datetime = datetime(end.year, end.month, end.day, 22,0)
+
         if using_resources is None:
             return False
 
         if not isinstance(start, datetime) or not isinstance(end, datetime):
             return False
         if start >= end:
+            return False
+        if start < day_start:
+            return False
+        if end > day_end:
             return False
 
         for name in using_resources.keys():
@@ -214,21 +221,21 @@ class Planner:
 
     # Ver detalles
     def see_details(self, event_name):
-        if self.events.get(event_name):
-            print(f"Name of the event : {event_name}")
-            print(
-                f"Date of the event : start: {self.events[event_name].start} \r\n                    end: {self.events[event_name].end}"
-            )
+        return self.events.get(event_name)
+        # if self.events.get(event_name):
+        #     print(f"Name of the event : {event_name}")
+        #     print(
+        #         f"Date of the event : start: {self.events[event_name].start} \r\n                    end: {self.events[event_name].end}"
+        #     )
 
-            print("Resources details: ")
-            for r in self.events[event_name].resources.values():
-                print(f"  {r.name}  =>  {r.amount}")
-
-        else:
-            print("That Event dosen't exist")
+        #     print("Resources details: ")
+        #     for r in self.events[event_name].resources.values():
+        #         print(f"  {r.name}  =>  {r.amount}")
+        # else:
+        #     print("That Event dosen't exist")
 
     # Obtener listado organizado
-    def get_event_list(self) -> list:
+    def get_event_list(self) -> list[dict[str,]]:
         result = []
         for key, ev in self.events.items():
             resources = [
@@ -247,6 +254,17 @@ class Planner:
         self.sort_by_date(result)
         return result
 
+    # Metodo de ordenacion por datetime
+    def sort_by_date(self, lst: list[dict[str,]]):
+        lst.sort(key=lambda e: e["start"])
+
+    def sort_events(self):
+        ev_dict = self.events
+        ev_dict = sorted(ev_dict.values() ,key=lambda x: x.start)
+        self.events.clear()
+        for e in ev_dict:
+            self.events[e.name]=e
+        
     # Metodo para hacer una tabla bonita para la consola
     def events_table(self) -> str:
         rows = []
@@ -283,167 +301,49 @@ class Planner:
             lines.append("-+-".join("-" * w for w in widths))
         return "\n".join(lines)
 
-    # Metodo de ordenacion por datetime
-    def sort_by_date(self, lst: list[dict[str,]]):
-        lst.sort(key=lambda e: e["start"])
-
-    #TODO terminar de hacer esto bien
+   
     # Obtener disponibilidad
-    def find_next_slot_step(self) -> tuple[datetime, datetime]:
-        
-        # Buscar el primer hueco libre (por defecto 1 hora) empezando hoy.
-        duration = timedelta(hours=1)
-        max_search_days = 30
+    def find_next_slot_step(
+          self,
+      ) -> tuple[datetime, datetime] | None:
 
-        # horario operativo
-        open_time = time(7, 0)
-        close_time = time(22, 0)
+          start_point: datetime = datetime(2025,12,28,10,0)
+          duration: timedelta = timedelta(hours=1)
+          day_start: datetime =  datetime(start_point.year,start_point.month,start_point.day, 7,0) 
 
-        # now = datetime.now()
-        now = datetime(2025,12,20,8,0)
-        start_date = now.date()
+          # Determinar punto de inicio respetando horario operativo
+          start_point = max(start_point, day_start)
+          day = day_start.date()
 
-        # Pre-sort events by start for deterministic behavior
-        events = sorted(self.events.values(), key=lambda e: e.start)
+          # Obtener eventos del día (ya están ordenados por start)
+          today_events = [ev for ev in self.events.values() if ev.start.date() == day]
 
-        for day_offset in range(0, max_search_days + 1):
-            day = start_date + timedelta(days=day_offset)
-            day_start = datetime.combine(day, open_time)
-            day_end = datetime.combine(day, close_time)
+          # Iterar por eventos del día
+          for event in today_events:
+              gap_duration = event.start - start_point
 
-            # build blocked intervals clipped to operating hours
-            blocked: list[tuple[datetime, datetime]] = []
-            for ev in events:
-                if ev.end <= day_start or ev.start >= day_end:
-                    continue
-                s = max(ev.start, day_start)
-                e = min(ev.end, day_end)
-                blocked.append((s, e))
+              # Si hay espacio suficiente antes del evento, retornar ese slot
+              if gap_duration >= duration:
+                  return (start_point, start_point + gap_duration)
 
-            # merge overlapping blocked intervals
-            blocked.sort(key=lambda t: t[0])
-            merged: list[tuple[datetime, datetime]] = []
-            for s, e in blocked:
-                if not merged:
-                    merged.append((s, e))
-                else:
-                    last_s, last_e = merged[-1]
-                    if s <= last_e:
-                        # overlap
-                        merged[-1] = (last_s, max(last_e, e))
-                    else:
-                        merged.append((s, e))
+              # Avanzar el punto de inicio al final del evento
+              start_point = max(start_point, event.end)
 
-            # earliest candidate on this day (respect current time for today)
-            earliest = day_start
-            if day == now.date() and now > day_start:
-                earliest = now
+          # Verificar si hay espacio después del último evento
+          end_point = start_point + duration
+          day_end: datetime = datetime(start_point.year,start_point.month,start_point.day, 22,0)
+          
+        #TODO revisar esto para el caso en q al final no se pueda el evento xq este cerrado el dominio
+          if end_point <= day_end:
+              return (start_point, end_point)
+          else:
+            end_point += timedelta(1) - (end_point - day_start - duration)
 
-            # if there are no blocked intervals, check whole day
-            if not merged:
-                if day_end - earliest >= duration:
-                    return earliest, earliest + duration
-                else:
-                    continue
-
-            # check gap before first blocked
-            first_s, first_e = merged[0]
-            if first_s - earliest >= duration:
-                return earliest, earliest + duration
-
-            # check gaps between merged intervals
-            for (s1, e1), (s2, e2) in zip(merged, merged[1:]):
-                gap_start = e1
-                gap_end = s2
-                if gap_end - gap_start >= duration and gap_start >= earliest:
-                    return gap_start, gap_start + duration
-                if (
-                    gap_end - max(gap_start, earliest) >= duration
-                    and earliest > gap_start
-                ):
-                    start_at = earliest
-                    return start_at, start_at + duration
-
-            # check after last blocked
-            last_s, last_e = merged[-1]
-            if day_end - max(last_e, earliest) >= duration:
-                start_at = max(last_e, earliest)
-                return start_at, start_at + duration
-
-        return None
-
+          return None
+  
     # endregion
 
-    # def create_event(self) -> bool:
-
-    #     print("""Introduce del evento: """)
-    #     user = input("name: str, start: datetime, end: datetime")
-
-    #     if name in self.events:
-    #         print("Event already exists")
-    #         return False
-    #     if not isinstance(start, datetime) or not isinstance(end, datetime) or start >= end:
-    #         print("Invalid start/end")
-    #         return False
-
-    #     ev = Event(name=name, start=start, end=end, resources={})
-    #     # No descontamos recursos hasta que se asignen
-    #     self.events[name] = ev
-    #     return True
-
-    # def add_resources_to_event(self, event_name: str, resources: dict[str, int]) -> bool:
-    #     """Asigna (o suma) recursos a un evento existente.
-
-    #     `resources` es un mapping nombre->cantidad (int). El método:
-    #     - valida que el evento exista
-    #     - construye el dict total (actual + solicitado)
-    #     - ejecuta la validación `is_valid` sin contar el propio evento para evitar doble conteo
-    #     - si es válido, aplica los cambios y actualiza `_resources` (resta la diferencia)
-    #     - devuelve True si tuvo éxito, False en caso contrario
-    #     """
-    #     if event_name not in self.events:
-    #         print("Event not found")
-    #         return False
-
-    #     ev = self.events[event_name]
-    #     # cantidades actuales en el evento
-    #     current = {n: r.amount for n, r in ev.resources.items()}
-    #     # construir merged
-    #     merged: dict[str, Resource] = {}
-    #     for n, a in current.items():
-    #         merged[n] = Resource(n, a)
-    #     for n, a in resources.items():
-    #         if n in merged:
-    #             merged[n].amount = merged[n].amount + int(a)
-    #         else:
-    #             merged[n] = Resource(n, int(a))
-
-    #     # temporalmente quitar el evento del planner para validar sin contarlo dos veces
-    #     saved = self.events.pop(event_name)
-    #     try:
-    #         ok = self.is_valid(ev.start, ev.end, merged)
-    #     finally:
-    #         # restaurar antes de continuar
-    #         self.events[event_name] = saved
-
-    #     if not ok:
-    #         print("Resources cannot be assigned due to conflicts or insufficient inventory")
-    #         return False
-
-    #     # aplicar cambios: actualizar event.resources y restar diferencias al inventario
-    #     for n, r in merged.items():
-    #         added = r.amount - current.get(n, 0)
-    #         if added > 0:
-    #             if n not in self._resources:
-    #                 print(f"Unknown resource: {n}")
-    #                 return False
-    #             self._resources[n].amount -= added
-
-    #     # asignar la nueva tabla de recursos al evento
-    #     ev.resources = merged
-    #     self.events[event_name] = ev
-    #     return True
-
+   
 raw_global_resources = {
     #                               Espacios
     "Cancha de Football": Resource("Cancha de Football", 1),
@@ -503,59 +403,60 @@ raw_global_resources = {
 p = Planner(raw_global_resources, {})
 
 # region Casos de prueba
-raw_actual_rfootbal = [
-    ("Cancha de Football", 1),
-    ("Pelota de Football", 3),
-    ("Arbitro", 1),
-    ("Personal de primeros auxilios", 2),
-]
-raw_actual_rfootbal = {
-    name: Resource(name, amount) for name, amount in raw_actual_rfootbal
-}
+# raw_actual_rfootbal = [
+#     ("Cancha de Football", 1),
+#     ("Pelota de Football", 3),
+#     ("Arbitro", 1),
+#     ("Personal de primeros auxilios", 2),
+# ]
+# raw_actual_rfootbal = {
+#     name: Resource(name, amount) for name, amount in raw_actual_rfootbal
+# }
 
-raw_actual_rfootsal = [
-    ("Cancha de FootSal", 1),
-    ("Pelota de Footsal", 3),
-    ("Arbitro", 1),
-    ("Personal de primeros auxilios", 2),
-]
-raw_actual_rfootsal = {
-    name: Resource(name, amount) for name, amount in raw_actual_rfootsal
-}
+# raw_actual_rfootsal = [
+#     ("Cancha de FootSal", 1),
+#     ("Pelota de Footsal", 3),
+#     ("Arbitro", 1),
+#     ("Personal de primeros auxilios", 2),
+# ]
+# raw_actual_rfootsal = {
+#     name: Resource(name, amount) for name, amount in raw_actual_rfootsal
+# }
 
-raw_actual_rBasket_t = [
-    ("Cancha de Basket (techada)", 1),
-    ("Pelota de Basket", 3),
-    ("Arbitro", 1),
-]
-raw_actual_rBasket_t = {
-    name: Resource(name, amount) for name, amount in raw_actual_rBasket_t
-}
+# raw_actual_rBasket_t = [
+#     ("Cancha de Basket (techada)", 1),
+#     ("Pelota de Basket", 3),
+#     ("Arbitro", 1),
+# ]
+# raw_actual_rBasket_t = {
+#     name: Resource(name, amount) for name, amount in raw_actual_rBasket_t
+# }
 
-e = Event(
-    "Partido de Football",
-    datetime(2025, 5, 7, 10, 0),
-    datetime(2025, 5, 7, 12, 0),
-    raw_actual_rfootbal,
-)
-b = Event(
-    "Partido de Footsal",
-    datetime(2025, 5, 7, 19, 0),
-    datetime(2025, 5, 7, 20, 0),
-    raw_actual_rfootsal,
-)
-c = Event(
-    "Partido de Basket",
-    datetime(2025, 5, 9, 15, 0),
-    datetime(2025, 5, 9, 16, 0),
-    raw_actual_rBasket_t,
-)
+# e = Event(
+#     "Partido de Football",
+#     datetime(2025, 5, 7, 10, 0),
+#     datetime(2025, 5, 7, 12, 0),
+#     raw_actual_rfootbal,
+# )
+# b = Event(
+#     "Partido de Footsal",
+#     datetime(2025, 5, 7, 19, 0),
+#     datetime(2025, 5, 7, 20, 0),
+#     raw_actual_rfootsal,
+# )
+# c = Event(
+#     "Partido de Basket",
+#     datetime(2025, 5, 9, 15, 0),
+#     datetime(2025, 5, 9, 16, 0),
+#     raw_actual_rBasket_t,
+# )
 
 # print(p.events_table())
 
 # p.add_events(b)
 # p.add_events(e)
 # p.add_events(c)
+# p.sort_events()
 
 # print(p.events_table())
 
@@ -576,16 +477,18 @@ c = Event(
 # #         {},
 # #     )
 # # )
-#     #endregion
 
 # resta = datetime(2025, 5, 8, 10, 0) - datetime(2025, 5, 7, 10, 0)
 # print(resta)
+
+#endregion
+
+
 
 
 import json
 from pathlib import Path
 from datetime import datetime
-
 
 def planner_to_dict(planner: Planner):
     return {
@@ -654,5 +557,3 @@ def get_default_data_path() -> Path:
     folder = project_root / "data"
     folder.mkdir(parents=True, exist_ok=True)
     return folder / "planner.json"
-
-
