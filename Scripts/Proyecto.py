@@ -1,11 +1,14 @@
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta, time
-from typing import Dict
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from pprint import pprint
 import os
 
 # import uuid
 # uuid.uuid4()
+
+@dataclass
+class DecisionRequired(Exception):
+    pass
 
 
 # Recursos
@@ -190,34 +193,37 @@ class Planner:
         return True
 
     # Añadir eventos
-    def add_events(self, event: Event):
+    def add_events(self, event: Event)-> None:
         if self.is_valid(event.start, event.end, event.resources):
-
-            for name, r in event.resources.items():
-                self._resources[name].amount -= r.amount
-
+            
             if self.events.get(event.name):
-                print("This event already exist")
-                inpt = input("Do you want to reewrite it, yes/no: ")
-                if inpt == "yes":
-                    self.events[event.name] = event
+                raise DecisionRequired(Exception("This event already exist"))
             else:
+                for name, r in event.resources.items():
+                    self._resources[name].amount -= r.amount
                 self.events[event.name] = event
 
         else:
-            print("That's not a valid event")
+            # print("That's not a valid event")
+            raise ValueError("That's not a valid event")
+        
+    def force_add(self, event: Event)-> None:
+        for name, r in event.resources.items():
+            self._resources[name].amount -= r.amount
+            
+        self.events[event.name] = event
 
     # Remover eventos
-    def remove_events(self, event_name):
+    def remove_event(self, event_name):
         if self.events.get(event_name):
-            inpt = input("Do you want to remove this event, yes/no: ")
-            if inpt == "yes":
-                used_resourcers = self.events[event_name].resources
+            used_resourcers = self.events[event_name].resources
 
-                for resource, r in used_resourcers.items():
-                    self._resources[resource].amount += r.amount
+            for resource, r in used_resourcers.items():
+                self._resources[resource].amount += r.amount
 
-                del self.events[event_name]
+            del self.events[event_name]
+        else:
+            raise Exception(f"This event:'{event_name}' dosen't exist")
 
     # Ver detalles
     def see_details(self, event_name):
@@ -300,12 +306,9 @@ class Planner:
                 lines.append(" | ".join(parts))
             lines.append("-+-".join("-" * w for w in widths))
         return "\n".join(lines)
-
    
     # Obtener disponibilidad
-    def find_next_slot_step(
-          self,
-      ) -> tuple[datetime, datetime] | None:
+    def find_next_slot_step(self) -> tuple[datetime, datetime] | None:
 
           start_point: datetime = datetime(2025,12,28,10,0)
           duration: timedelta = timedelta(hours=1)
@@ -340,67 +343,70 @@ class Planner:
             end_point += timedelta(1) - (end_point - day_start - duration)
 
           return None
-  
+
     # endregion
 
-   
-raw_global_resources = {
-    #                               Espacios
-    "Cancha de Football": Resource("Cancha de Football", 1),
-    "Cancha de Tenis": Resource("Cancha de Tenis", 1),
-    "Cancha de Basket (techada)": Resource("Cancha de Basket (techada)", 1),
-    "Cancha de Basket (aire libre)": Resource("Cancha de Basket (aire libre)", 2),
-    "Cancha de FootSal": Resource("Cancha de FootSal", 1),
-    "Cancha de Boleyball": Resource("Cancha de Boleyball", 1),
-    "Cancha de Badmintong": Resource("Cancha de Badmintong", 1),
-    "Cancha de Cancha": Resource("Cancha de Cancha", 1),
-    "Piscina Olimpica": Resource("Piscina Olimpica", 1),
-    "Habitacion para juegos de mesa": Resource("Habitacion para juegos de mesa", 1),
-    "Habitacion con Colchon": Resource("Habitacion con Colchon", 1),
-    "Pista de Carreras": Resource("Pista de Carreras", 1),
-    "Biosaludable (techado)": Resource("Biosaludable (techado)", 1),
-    "Biosaludable (aire libre)": Resource("Biosaludable (aire libre)", 1),
-    "Estadio de BaseBall": Resource("Estadio de BaseBall", 1),
-    "Ring de boxeo": Resource("Estadio de BaseBall", 1),
-    #                             Implementos
-    "Pelota de Football": Resource("Pelota de Football", 15),
-    "Pelota de Footsal": Resource("Pelota de Footsal", 15),
-    "Pelota de Tenis": Resource("Pelota de Tenis", 50),
-    "Pelota de Tenis de Mesa": Resource("Pelota de Tenis de Mesa", 50),
-    "Pelota de Boleyball": Resource("Pelota de Boleyball", 15),
-    "Pelota de Basket": Resource("Pelota de Basket", 15),
-    "Pelota de Cancha": Resource("Pelota de Cancha", 15),
-    "Pelota de Badmintong": Resource("Pelota de Badmintong", 15),
-    "Pelota de Baseball": Resource("Pelota de Baseball", 30),
-    "Raquetas de Cancha": Resource("Raquetas de Cancha", 6),
-    "Raquetas de Badmintong": Resource("Raquetas de Badmintong", 6),
-    "Raquetas de Tenis": Resource("Raquetas de Tenis", 6),
-    "Raquetas de Tenis de Mesa": Resource("Raquetas de Tenis de Mesa", 6),
-    "Bates de BaseBall": Resource("Bates de BaseBall", 30),
-    "Guantes de BaseBall": Resource("Guantes de BaseBall", 30),
-    "Guantes de Boxeo": Resource("Guantes de Boxeo", 30),
-    "Protectores de BaseBall": Resource("Protectores de BaseBall", 30),
-    "Cascos de BaseBall": Resource("Cascos de BaseBall", 30),
-    "Cascos de Boxeo": Resource("Cascos de Boxeo", 30),
-    "Protectores de Karate": Resource("Protectores de Karate", 30),
-    "Cascos de Karate": Resource("Cascos de Karate", 30),
-    "Protectores de Taekwando": Resource("Protectores de Taekwando", 30),
-    "Cascos de Taekwando": Resource("Cascos de Taekwando", 30),
-    "Boyas": Resource("Boyas", 16),
-    "Sacos de Boxeo": Resource("Sacos de Boxeo", 4),
-    "Estrado de Premiaciones": Resource("Estrado de Premiaciones", 4),
-    "Altavoces": Resource("Altavoces", 16),
-    "Microfonos": Resource("Microfonos", 8),
-    "Mesa de PingPong": Resource("Mesa de PingPong", 8),
-    "Tablero de ajedrez": Resource("Tablero de ajedrez", 8),
-    #                               Personal
-    "Arbitro": Resource("Arbitro", 5),
-    "Personal de primeros auxilios": Resource("Personal de primeros auxilios", 5),
-    "Salva Vidas": Resource("Salva Vidas", 16),
-    "Ambulacia": Resource("Ambulacia", 2),
-    "Comentaristas": Resource("Comentaristas", 6),
-}
-p = Planner(raw_global_resources, {})
+@dataclass
+class Utils:
+    def create_planner():
+        raw_global_resources = {
+            #                               Espacios
+            "Cancha de Football": Resource("Cancha de Football", 1),
+            "Cancha de Tenis": Resource("Cancha de Tenis", 1),
+            "Cancha de Basket (techada)": Resource("Cancha de Basket (techada)", 1),
+            "Cancha de Basket (aire libre)": Resource("Cancha de Basket (aire libre)", 2),
+            "Cancha de FootSal": Resource("Cancha de FootSal", 1),
+            "Cancha de Boleyball": Resource("Cancha de Boleyball", 1),
+            "Cancha de Badmintong": Resource("Cancha de Badmintong", 1),
+            "Cancha de Cancha": Resource("Cancha de Cancha", 1),
+            "Piscina Olimpica": Resource("Piscina Olimpica", 1),
+            "Habitacion para juegos de mesa": Resource("Habitacion para juegos de mesa", 1),
+            "Habitacion con Colchon": Resource("Habitacion con Colchon", 1),
+            "Pista de Carreras": Resource("Pista de Carreras", 1),
+            "Biosaludable (techado)": Resource("Biosaludable (techado)", 1),
+            "Biosaludable (aire libre)": Resource("Biosaludable (aire libre)", 1),
+            "Estadio de BaseBall": Resource("Estadio de BaseBall", 1),
+            "Ring de boxeo": Resource("Estadio de BaseBall", 1),
+            #                             Implementos
+            "Pelota de Football": Resource("Pelota de Football", 15),
+            "Pelota de Footsal": Resource("Pelota de Footsal", 15),
+            "Pelota de Tenis": Resource("Pelota de Tenis", 50),
+            "Pelota de Tenis de Mesa": Resource("Pelota de Tenis de Mesa", 50),
+            "Pelota de Boleyball": Resource("Pelota de Boleyball", 15),
+            "Pelota de Basket": Resource("Pelota de Basket", 15),
+            "Pelota de Cancha": Resource("Pelota de Cancha", 15),
+            "Pelota de Badmintong": Resource("Pelota de Badmintong", 15),
+            "Pelota de Baseball": Resource("Pelota de Baseball", 30),
+            "Raquetas de Cancha": Resource("Raquetas de Cancha", 6),
+            "Raquetas de Badmintong": Resource("Raquetas de Badmintong", 6),
+            "Raquetas de Tenis": Resource("Raquetas de Tenis", 6),
+            "Raquetas de Tenis de Mesa": Resource("Raquetas de Tenis de Mesa", 6),
+            "Bates de BaseBall": Resource("Bates de BaseBall", 30),
+            "Guantes de BaseBall": Resource("Guantes de BaseBall", 30),
+            "Guantes de Boxeo": Resource("Guantes de Boxeo", 30),
+            "Protectores de BaseBall": Resource("Protectores de BaseBall", 30),
+            "Cascos de BaseBall": Resource("Cascos de BaseBall", 30),
+            "Cascos de Boxeo": Resource("Cascos de Boxeo", 30),
+            "Protectores de Karate": Resource("Protectores de Karate", 30),
+            "Cascos de Karate": Resource("Cascos de Karate", 30),
+            "Protectores de Taekwando": Resource("Protectores de Taekwando", 30),
+            "Cascos de Taekwando": Resource("Cascos de Taekwando", 30),
+            "Boyas": Resource("Boyas", 16),
+            "Sacos de Boxeo": Resource("Sacos de Boxeo", 4),
+            "Estrado de Premiaciones": Resource("Estrado de Premiaciones", 4),
+            "Altavoces": Resource("Altavoces", 16),
+            "Microfonos": Resource("Microfonos", 8),
+            "Mesa de PingPong": Resource("Mesa de PingPong", 8),
+            "Tablero de ajedrez": Resource("Tablero de ajedrez", 8),
+            #                               Personal
+            "Arbitro": Resource("Arbitro", 5),
+            "Personal de primeros auxilios": Resource("Personal de primeros auxilios", 5),
+            "Salva Vidas": Resource("Salva Vidas", 16),
+            "Ambulacia": Resource("Ambulacia", 2),
+            "Comentaristas": Resource("Comentaristas", 6),
+        }
+        return Planner(raw_global_resources, {})
+
 
 # region Casos de prueba
 # raw_actual_rfootbal = [
@@ -484,8 +490,6 @@ p = Planner(raw_global_resources, {})
 #endregion
 
 
-
-
 import json
 from pathlib import Path
 from datetime import datetime
@@ -509,22 +513,20 @@ def planner_to_dict(planner: Planner):
         "excludes": planner.excludes,
     }
 
-def save_planner(planner, path: str):
+def save_planner(namefile: str ,planner, path: str | None = None):
     if path is None:
-        p = get_default_data_path()
+        p = get_default_data_path(namefile)
     else:
         p = Path(path)
     data = planner_to_dict(planner)
     tmp = p.with_suffix(".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.replace(p)  # escritura atómica
+    tmp.replace(p)# escritura atómica
 
 def load_planner(path: str | None = None):
-    if path is None:
-        p = get_default_data_path()
-    else:
-        p = Path(path)
+    p = Path(path)
+    
     with p.open("r", encoding="utf-8") as f:
         data = json.load(f)
     # reconstruir Planner
@@ -551,9 +553,11 @@ def load_planner(path: str | None = None):
     pl.excludes = data.get("excludes", {})
     return pl
 
-def get_default_data_path() -> Path:
+def get_default_data_path(namefile: str) -> Path:
     # Guardar en la carpeta del proyecto
     project_root = Path(__file__).resolve().parent.parent
     folder = project_root / "data"
     folder.mkdir(parents=True, exist_ok=True)
-    return folder / "planner.json"
+    return folder / f"{namefile}.json"
+
+
