@@ -4,7 +4,24 @@ Sistema de planificación inteligente para centros deportivos que gestiona event
 
 **Versión:** 1.0  
 **Desarrollado en:** Python 3.x con Tkinter  
-**Estado:** Completo y listo para producción
+**Estado:** Completo y listo para producción  
+**Disponible como:** Código fuente + Ejecutable Windows (.exe)
+
+---
+
+## 🚀 Inicio Rápido
+
+### Para usuarios (sin Python):
+1. Descarga `SmartSport Scheduler.exe` de la carpeta `dist/`
+2. Doble clic en el archivo
+3. ¡Listo para usar!
+
+### Para desarrolladores (con Python):
+```bash
+git clone https://github.com/tu-usuario/SmartSport-Scheduler.git
+cd SmartSport-Scheduler
+py main.py
+```
 
 ---
 
@@ -16,7 +33,8 @@ SmartSport Scheduler es una aplicación de escritorio diseñada para centros dep
 - Validar automáticamente conflictos temporales y de recursos
 - Aplicar reglas de co-requisitos y exclusiones entre recursos
 - Visualizar calendario mensual con disponibilidad de espacios
-- La persistencia de datos con escritura atómica en formato JSON
+- Persistencia de datos con escritura atómica en formato JSON
+- **Ejecutable independiente** sin necesidad de instalar Python
 
 ---
 
@@ -312,11 +330,19 @@ El sistema viene con 50+ recursos configurados para un centro deportivo completo
 
 ## Requisitos del Sistema
 
+### Para ejecutar desde código fuente:
 - **Python:** 3.10 o superior
 - **Dependencias:** Solo bibliotecas estándar de Python
   - `tkinter` (incluido con Python en Windows/macOS)
   - `dataclasses`, `datetime`, `json`, `pathlib`
 - **Sistema Operativo:** Windows, macOS, Linux
+
+### Para usar el ejecutable (.exe):
+- **Python:** NO requerido
+- **Sistema Operativo:** Windows 7, 8, 10, 11
+- **Espacio en disco:** ~15 MB (10 MB exe + 5 MB datos)
+- **RAM:** Mínimo 100 MB
+- **Permisos:** Puede requerir aprobación de Windows Defender en primera ejecución
 
 ---
 
@@ -329,6 +355,8 @@ cd SmartSport-Scheduler
 ```
 
 ### 2. Ejecutar la aplicación
+
+#### Opción A: Desde código fuente (requiere Python)
 ```bash
 # Windows
 py main.py
@@ -336,6 +364,55 @@ py main.py
 # Linux/macOS
 python3 main.py
 ```
+
+#### Opción B: Ejecutable (.exe) - Solo Windows
+Si prefieres un ejecutable independiente sin necesidad de Python:
+
+
+## 🚀 Descarga
+
+**Ejecutable Windows (.exe):**  
+[Descargar última versión](https://github.com/AtlasOffMind/SmartSport-Scheduler/releases/latest)
+
+**Ejecutar:**
+- Doble clic en el archivo `.exe`
+- No requiere instalación de Python
+- Compatible con Windows 7, 8, 10, 11
+
+**Primera ejecución:**
+- Puede tardar unos segundos en iniciar
+- Si Windows Defender lo bloquea: "Más información" → "Ejecutar de todos modos"
+
+### 3. Generar tu propio ejecutable (.exe)
+
+Si modificas el código y quieres generar un nuevo .exe:
+
+```bash
+# Instalar PyInstaller (solo una vez)
+pip install pyinstaller
+
+# Generar ejecutable
+pyinstaller --onefile --windowed --name "SmartSport Scheduler" main.py
+```
+
+El ejecutable estará en `dist/SmartSport Scheduler.exe` (~10 MB)
+
+**Opciones de PyInstaller:**
+- `--onefile`: Genera un único archivo .exe
+- `--windowed`: Oculta la consola (solo GUI)
+- `--name`: Nombre personalizado del ejecutable
+- `--icon=icon.ico`: Agregar ícono personalizado (opcional)
+
+**Para incluir archivos adicionales:**
+```bash
+pyinstaller --onefile --windowed --name "SmartSport Scheduler" --add-data "data;data" main.py
+```
+
+**Distribución del .exe:**
+- Copia solo el archivo `.exe` de la carpeta `dist/`
+- (Opcional) Incluye carpeta `data/` si hay planificaciones guardadas
+- El receptor NO necesita tener Python instalado
+- Tamaño: ~10 MB (incluye Python y dependencias)
 
 ---
 
@@ -440,6 +517,26 @@ Ejemplo de archivo guardado:
 **Causa:** Usuario cerró ventana en lugar de presionar "Aceptar"  
 **Comportamiento esperado:** El flujo se cancela y vuelve a ventana principal
 
+### Ejecutable (.exe) bloqueado por Windows Defender
+**Causa:** Windows marca ejecutables desconocidos como potencialmente peligrosos  
+**Solución:**
+1. Hacer clic en "Más información"
+2. Seleccionar "Ejecutar de todos modos"
+3. (Opcional) Agregar excepción en Windows Defender para `SmartSport Scheduler.exe`
+
+**Nota:** Es un falso positivo común en ejecutables creados con PyInstaller
+
+### El .exe tarda mucho en iniciar
+**Causa normal:** Primera ejecución (antivirus escaneando)  
+**Solución:** Esperar ~5-10 segundos. Ejecuciones posteriores serán más rápidas
+
+### Error al generar .exe con PyInstaller
+**Verificar:**
+- PyInstaller instalado: `pip install pyinstaller`
+- Ejecutar desde raíz del proyecto
+- No tener el .exe anterior abierto
+- Cerrar todas las instancias de la aplicación
+
 ---
 
 ## Créditos
@@ -454,3 +551,7 @@ Ejemplo de archivo guardado:
 Para reportar bugs o sugerencias:
 - **GitHub Issues:** [\[AtlasOffMind\]](https://github.com/AtlasOffMind/SmartSport-Scheduler)
 - **Email:** gameover.mg533@gmail.com
+
+---
+
+
