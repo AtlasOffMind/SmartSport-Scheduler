@@ -6,9 +6,13 @@ import os
 # import uuid
 # uuid.uuid4()
 
+
 @dataclass
 class DecisionRequired(Exception):
-    pass
+    message: str = ""
+
+    def __str__(self):
+        return self.message
 
 
 # Recursos
@@ -17,6 +21,7 @@ class Resource:
     name: str
     amount: int
 
+
 # Eventos
 @dataclass
 class Event:
@@ -24,6 +29,7 @@ class Event:
     start: datetime
     end: datetime
     resources: dict[str, Resource]
+
 
 # Planificador
 @dataclass
@@ -77,10 +83,12 @@ class Planner:
                 "Personal de primeros auxilios",
             ],
             "Ring de boxeo": [
-                "Arbitro" "Guantes de Boxeo",
+                "Arbitro",
+                "Guantes de Boxeo",
                 "Cascos de Boxeo",
                 "Personal de primeros auxilios",
             ],
+            "Cancha de Tenis": ["Pelota de Tenis", "Raquetas de Tenis", "Arbitro"],
             # Implementos que requieren espacio y/o equipos complementarios
             "Pelota de Football": ["Cancha de Football"],
             "Pelota de Footsall": ["Cancha de FootSal"],
@@ -145,8 +153,8 @@ class Planner:
         using_resources: dict[str, Resource] | None = None,
     ) -> bool:
 
-        day_start: datetime =  datetime(start.year, start.month, start.day, 7,0) 
-        day_end: datetime = datetime(end.year, end.month, end.day, 22,0)
+        day_start: datetime = datetime(start.year, start.month, start.day, 7, 0)
+        day_end: datetime = datetime(start.year, start.month, start.day, 22, 0)
 
         if using_resources is None:
             return False
@@ -193,34 +201,21 @@ class Planner:
         return True
 
     # Añadir eventos
-    def add_events(self, event: Event)-> None:
-        if self.is_valid(event.start, event.end, event.resources):
-            
-            if self.events.get(event.name):
-                raise DecisionRequired(Exception("This event already exist"))
-            else:
-                for name, r in event.resources.items():
-                    self._resources[name].amount -= r.amount
-                self.events[event.name] = event
-
-        else:
-            # print("That's not a valid event")
-            raise ValueError("That's not a valid event")
+    def add_events(self, event: Event) -> None:
+        if self.events.get(event.name):
+            raise DecisionRequired("This event already exist")
         
-    def force_add(self, event: Event)-> None:
-        for name, r in event.resources.items():
-            self._resources[name].amount -= r.amount
-            
+        if self.is_valid(event.start, event.end, event.resources):
+                self.events[event.name] = event
+        else:
+            raise ValueError("That's not a valid event")
+
+    def force_add(self, event: Event) -> None:
         self.events[event.name] = event
 
     # Remover eventos
     def remove_event(self, event_name):
         if self.events.get(event_name):
-            used_resourcers = self.events[event_name].resources
-
-            for resource, r in used_resourcers.items():
-                self._resources[resource].amount += r.amount
-
             del self.events[event_name]
         else:
             raise Exception(f"This event:'{event_name}' dosen't exist")
@@ -231,7 +226,8 @@ class Planner:
         # if self.events.get(event_name):
         #     print(f"Name of the event : {event_name}")
         #     print(
-        #         f"Date of the event : start: {self.events[event_name].start} \r\n                    end: {self.events[event_name].end}"
+        #         f"Date of the event : start: {self.events[event_name].start} \r\n
+        #                               end: {self.events[event_name].end}"
         #     )
 
         #     print("Resources details: ")
@@ -266,11 +262,11 @@ class Planner:
 
     def sort_events(self):
         ev_dict = self.events
-        ev_dict = sorted(ev_dict.values() ,key=lambda x: x.start)
+        ev_dict = sorted(ev_dict.values(), key=lambda x: x.start)
         self.events.clear()
         for e in ev_dict:
-            self.events[e.name]=e
-        
+            self.events[e.name] = e
+
     # Metodo para hacer una tabla bonita para la consola
     def events_table(self) -> str:
         rows = []
@@ -306,45 +302,50 @@ class Planner:
                 lines.append(" | ".join(parts))
             lines.append("-+-".join("-" * w for w in widths))
         return "\n".join(lines)
-   
+
     # Obtener disponibilidad
     def find_next_slot_step(self) -> tuple[datetime, datetime] | None:
 
-          start_point: datetime = datetime(2025,12,28,10,0)
-          duration: timedelta = timedelta(hours=1)
-          day_start: datetime =  datetime(start_point.year,start_point.month,start_point.day, 7,0) 
+        start_point: datetime = datetime(2025, 12, 28, 10, 0)
+        duration: timedelta = timedelta(hours=1)
+        day_start: datetime = datetime(
+            start_point.year, start_point.month, start_point.day, 7, 0
+        )
 
-          # Determinar punto de inicio respetando horario operativo
-          start_point = max(start_point, day_start)
-          day = day_start.date()
+        # Determinar punto de inicio respetando horario operativo
+        start_point = max(start_point, day_start)
+        day = day_start.date()
 
-          # Obtener eventos del día (ya están ordenados por start)
-          today_events = [ev for ev in self.events.values() if ev.start.date() == day]
+        # Obtener eventos del día (ya están ordenados por start)
+        today_events = [ev for ev in self.events.values() if ev.start.date() == day]
 
-          # Iterar por eventos del día
-          for event in today_events:
-              gap_duration = event.start - start_point
+        # Iterar por eventos del día
+        for event in today_events:
+            gap_duration = event.start - start_point
 
-              # Si hay espacio suficiente antes del evento, retornar ese slot
-              if gap_duration >= duration:
-                  return (start_point, start_point + gap_duration)
+            # Si hay espacio suficiente antes del evento, retornar ese slot
+            if gap_duration >= duration:
+                return (start_point, start_point + gap_duration)
 
-              # Avanzar el punto de inicio al final del evento
-              start_point = max(start_point, event.end)
+            # Avanzar el punto de inicio al final del evento
+            start_point = max(start_point, event.end)
 
-          # Verificar si hay espacio después del último evento
-          end_point = start_point + duration
-          day_end: datetime = datetime(start_point.year,start_point.month,start_point.day, 22,0)
-          
-        #TODO revisar esto para el caso en q al final no se pueda el evento xq este cerrado el dominio
-          if end_point <= day_end:
-              return (start_point, end_point)
-          else:
+        # Verificar si hay espacio después del último evento
+        end_point = start_point + duration
+        day_end: datetime = datetime(
+            start_point.year, start_point.month, start_point.day, 22, 0
+        )
+
+        # TODO revisar esto para el caso en q al final no se pueda el evento xq este cerrado el dominio
+        if end_point <= day_end:
+            return (start_point, end_point)
+        else:
             end_point += timedelta(1) - (end_point - day_start - duration)
 
-          return None
+        return None
 
     # endregion
+
 
 @dataclass
 class Utils:
@@ -354,13 +355,17 @@ class Utils:
             "Cancha de Football": Resource("Cancha de Football", 1),
             "Cancha de Tenis": Resource("Cancha de Tenis", 1),
             "Cancha de Basket (techada)": Resource("Cancha de Basket (techada)", 1),
-            "Cancha de Basket (aire libre)": Resource("Cancha de Basket (aire libre)", 2),
+            "Cancha de Basket (aire libre)": Resource(
+                "Cancha de Basket (aire libre)", 1
+            ),
             "Cancha de FootSal": Resource("Cancha de FootSal", 1),
             "Cancha de Boleyball": Resource("Cancha de Boleyball", 1),
             "Cancha de Badmintong": Resource("Cancha de Badmintong", 1),
             "Cancha de Cancha": Resource("Cancha de Cancha", 1),
             "Piscina Olimpica": Resource("Piscina Olimpica", 1),
-            "Habitacion para juegos de mesa": Resource("Habitacion para juegos de mesa", 1),
+            "Habitacion para juegos de mesa": Resource(
+                "Habitacion para juegos de mesa", 1
+            ),
             "Habitacion con Colchon": Resource("Habitacion con Colchon", 1),
             "Pista de Carreras": Resource("Pista de Carreras", 1),
             "Biosaludable (techado)": Resource("Biosaludable (techado)", 1),
@@ -400,7 +405,9 @@ class Utils:
             "Tablero de ajedrez": Resource("Tablero de ajedrez", 8),
             #                               Personal
             "Arbitro": Resource("Arbitro", 5),
-            "Personal de primeros auxilios": Resource("Personal de primeros auxilios", 5),
+            "Personal de primeros auxilios": Resource(
+                "Personal de primeros auxilios", 5
+            ),
             "Salva Vidas": Resource("Salva Vidas", 16),
             "Ambulacia": Resource("Ambulacia", 2),
             "Comentaristas": Resource("Comentaristas", 6),
@@ -487,12 +494,13 @@ class Utils:
 # resta = datetime(2025, 5, 8, 10, 0) - datetime(2025, 5, 7, 10, 0)
 # print(resta)
 
-#endregion
+# endregion
 
 
 import json
 from pathlib import Path
 from datetime import datetime
+
 
 def planner_to_dict(planner: Planner):
     return {
@@ -513,7 +521,8 @@ def planner_to_dict(planner: Planner):
         "excludes": planner.excludes,
     }
 
-def save_planner(namefile: str ,planner, path: str | None = None):
+
+def save_planner(namefile: str, planner, path: str | None = None):
     if path is None:
         p = get_default_data_path(namefile)
     else:
@@ -522,11 +531,12 @@ def save_planner(namefile: str ,planner, path: str | None = None):
     tmp = p.with_suffix(".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.replace(p)# escritura atómica
+    tmp.replace(p)  # escritura atómica
+
 
 def load_planner(path: str | None = None):
     p = Path(path)
-    
+
     with p.open("r", encoding="utf-8") as f:
         data = json.load(f)
     # reconstruir Planner
@@ -553,11 +563,10 @@ def load_planner(path: str | None = None):
     pl.excludes = data.get("excludes", {})
     return pl
 
+
 def get_default_data_path(namefile: str) -> Path:
     # Guardar en la carpeta del proyecto
     project_root = Path(__file__).resolve().parent.parent
     folder = project_root / "data"
     folder.mkdir(parents=True, exist_ok=True)
     return folder / f"{namefile}.json"
-
-

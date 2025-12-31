@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 import calendar
 import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog
@@ -11,10 +11,19 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "Scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from Proyecto import load_planner, save_planner, Resource, Event, Utils, DecisionRequired
+from Proyecto import (
+    load_planner,
+    save_planner,
+    Resource,
+    Event,
+    Utils,
+    DecisionRequired,
+)
 
+
+# Aprobado x Chayanne
 @dataclass
-class Utils_Gui():
+class Utils_Gui:
     def center_window(window):
         window.update_idletasks()
 
@@ -29,19 +38,22 @@ class Utils_Gui():
 
         window.geometry(f"{w}x{h}+{x}+{y}")
 
+
+# Aprobado x Chayanne
 class MultiInputDialog(tk.Toplevel):
     def __init__(self, parent, title: str):
         super().__init__(parent)
 
-        self.result = None
+        self.accepted = False
 
+        self.result = None
         self.title(title)
-        
+
         self.withdraw()
         self.geometry("300x200")
         Utils_Gui.center_window(self)
         self.deiconify()
-        
+
         self.resizable(False, False)
 
         tk.Label(self, text="year").grid(row=0, column=0, padx=10, pady=5)
@@ -79,56 +91,191 @@ class MultiInputDialog(tk.Toplevel):
             hour = int(self.hour_entry.get())
         except ValueError as v:
             messagebox.showerror("Invalid date", "Invalid date")
+            return
         try:
             min = int(self.min_entry.get())
         except ValueError:
-            min = 0 
+            min = 0
 
-
-        self.result = (year,month,day,hour,min)
+        self.result = (year, month, day, hour, min)
+        self.accepted = True
         self.destroy()
 
-class CuantitySelectedResources(tk.Toplevel):
-    def __init__(self, parent, resources_selected: dict[str,int], original_dict: dict[str,Resource]):
+
+# Aprobado x Chayanne
+class RequiredResourcesDialog(tk.Toplevel):
+    """Ventana que muestra recursos obligatorios"""
+
+    def __init__(
+        self,
+        parent,
+        selected_resources: dict[str, int],
+        requires_dict: dict[str, list[str]],
+        resource_name,
+    ):
         super().__init__(parent)
-        
+
         self.withdraw()
-        self.title("Seleccionar cantidad de recursos")
-        self.geometry("400x500")
+        self.title("Recursos Obligatorios")
+        self.geometry("500x300")
         Utils_Gui.center_window(self)
-        # self.resizable(False, False)
         self.deiconify()
-        
-        self.result_events: dict[str, Event] = {}
-        
-        r = 1
-        label_list = []
-        
-        #TODO ya esta mierda funciona (pero falta)
-            # hay q agregar boton de aceptar, guardar todas las cantidades,
-            # hay q poner un label q diga en la row=0 nombre del recurso, actual amount 
-            # hay q hacer otra clase para agregarle los recusos obligatorios 
-            # hay q revisar las exclusiones
-        for n in resources_selected.keys():
-            if original_dict[n].amount > 1:
-                label_list.append((tk.Label(self, text=n).grid(row=r,  column=0, columnspan=1, padx=1, pady=8, sticky="nsew"),
-                 tk.Spinbox(self,from_=1,to=100,width=5).grid(row=r,  column=1, columnspan=1, padx=30, pady=8, sticky="nsew")))
-                r += 1       
+
+        self.accepted = False  # Flag para verificar si fue aceptada
+        self.result_resources: dict[str, int] = selected_resources
+
+        # Obtener recursos obligatorios para este recurso
+        self.required_list = requires_dict.get(resource_name, [])
+
+        # Mensaje informativo
+        msg = f"Como ha usado el recurso '{resource_name}' necesita incluir los recursos obligatorios que van con este:"
+        tk.Label(
+            self, text=msg, font=("Arial", 10), wraplength=450, justify="left"
+        ).pack(padx=15, pady=15)
+
+        # Listbox con recursos obligatorios
+        frame = tk.Frame(self)
+        frame.pack(padx=15, pady=10, fill="both", expand=True)
+
+        tk.Label(
+            frame, text="Recursos que se agregarán:", font=("Arial", 9, "bold")
+        ).pack(anchor="w")
+
+        listbox = tk.Listbox(frame, height=8)
+        listbox.pack(fill="both", expand=True, pady=5)
+
+        for req_resource in self.required_list:
+            selected_r_names = selected_resources.keys()
+            if req_resource not in selected_r_names:
+                listbox.insert(tk.END, f"• {req_resource}")
+
+        # Botón OK (ahora con lambda para ejecutar al hacer click)
+        tk.Button(self, text="Aceptar", command=self._on_accept).pack(pady=10)
+
         self.transient(parent)
         self.grab_set()
         self.wait_window(self)
-        
-        
-        
-        
 
+    def _on_accept(self):
+        # Agregar recursos obligatorios a la lista
+        for req_resource in self.required_list:
+            self.result_resources[req_resource] = self.result_resources.get(
+                req_resource, 0
+            )
+
+        self.accepted = True  # Marcar como aceptada
+        self.destroy()
+
+
+# Aprobado x Chayanne
+class CuantitySelectedResources(tk.Toplevel):
+    def __init__(
+        self,
+        parent,
+        resources_selected: dict[str, int],
+        original_dict: dict[str, Resource],
+    ):
+        super().__init__(parent)
+
+        self.withdraw()
+        self.title("Seleccionar cantidad de recursos")
+        self.accepted = False  # Flag para verificar si fue aceptada
+        self.result_resources: dict[str, Resource] = {}
+        self.spinbox_dict: dict[str, tk.Spinbox] = {}
+
+        # Header con títulos
+        header_frame = tk.Frame(self)
+        header_frame.grid(
+            row=0, column=0, columnspan=2, padx=10, pady=10, sticky="nsew"
+        )
+        tk.Label(header_frame, text="Recurso", font=("Arial", 10, "bold")).pack(
+            side="left", expand=True
+        )
+        tk.Label(
+            header_frame, text="Cantidad disponible", font=("Arial", 10, "bold")
+        ).pack(side="left", padx=20)
+        tk.Label(header_frame, text="Cantidad a usar", font=("Arial", 10, "bold")).pack(
+            side="left", padx=20
+        )
+
+        r = 1
+
+        # Crear Spinbox para cada recurso seleccionado
+        for resource_name in resources_selected.keys():
+            if original_dict[resource_name].amount > 1:
+                resource = original_dict[resource_name]
+                max_amount = resource.amount
+
+                # Label del recurso
+                tk.Label(self, text=resource_name).grid(
+                    row=r, column=0, padx=10, pady=8, sticky="w"
+                )
+
+                # Label cantidad disponible
+                tk.Label(self, text=str(max_amount)).grid(
+                    row=r, column=0, padx=200, pady=8
+                )
+
+                # Spinbox para cantidad a usar
+                spinbox = tk.Spinbox(self, from_=1, to=max_amount, width=5)
+                spinbox.grid(row=r, column=1, padx=10, pady=8)
+                self.spinbox_dict[resource_name] = spinbox
+
+                r += 1
+            else:
+                self.spinbox_dict[resource_name] = 1
+
+        # Botón Aceptar
+        tk.Button(
+            self, text="Aceptar", command=self._on_accept, bg="#4CAF50", fg="white"
+        ).grid(row=r, column=0, columnspan=2, pady=20)
+
+        # Ajustar tamaño de ventana según contenido
+        self.update_idletasks()
+        width = self.winfo_reqwidth() + 20
+        height = self.winfo_reqheight() + 20
+        self.geometry(f"{width}x{height}")
+        Utils_Gui.center_window(self)
+        self.deiconify()
+
+        self.transient(parent)
+        self.grab_set()
+        self.wait_window(self)
+
+    def _on_accept(self):
+        for resource_name, spinbox in self.spinbox_dict.items():
+            if isinstance(spinbox, tk.Spinbox):
+                try:
+                    amount = int(spinbox.get())
+                    if amount > 0:
+                        self.result_resources[resource_name] = Resource(
+                            resource_name, amount
+                        )
+                except ValueError:
+                    messagebox.showerror(
+                        "Error", f"Cantidad inválida para {resource_name}"
+                    )
+                    return
+
+            else:
+                amount = spinbox
+                self.result_resources[resource_name] = Resource(resource_name, amount)
+        self.accepted = True  # Marcar como aceptada
+        self.destroy()
+
+
+# Aprobado x Chayanne
 class ResourceSelectorDialog(tk.Toplevel):
     global_resources = {}
-    
-    def __init__(self, parent, resources):
+    global_requires = {}
+
+    def __init__(self, parent, resources, planner_requires):
         super().__init__(parent)
-        
+
+        self.accepted = False
+
         self.global_resources = resources
+        self.global_requires = planner_requires
 
         self.withdraw()
         self.title("Seleccionar recursos")
@@ -137,13 +284,13 @@ class ResourceSelectorDialog(tk.Toplevel):
         # self.resizable(False, False)
         self.deiconify()
 
-        self.result:dict[str,int] = {}
+        self.result: dict[str, int] = {}
 
         # --- Listbox de recursos ---
         tk.Label(self, text="Recursos disponibles").pack(pady=(10, 0))
 
-        self.listbox = tk.Listbox(self,selectmode=tk.MULTIPLE,height=20)
-        
+        self.listbox = tk.Listbox(self, selectmode=tk.MULTIPLE, height=20)
+
         self.listbox.pack(fill="x", padx=10)
 
         self.refresh_list()
@@ -152,20 +299,17 @@ class ResourceSelectorDialog(tk.Toplevel):
         qty_frame = tk.Frame(self)
         qty_frame.pack(pady=10)
 
-        # tk.Label(qty_frame, text="Cantidad:").pack(side="left")
-
-        # self.qty_spin = tk.Spinbox(qty_frame,from_=1,to=100,width=5)
-        # self.qty_spin.pack(side="left", padx=5)
-
         # --- Botón agregar ---
-        tk.Button(self,text="Agregar recurso(s)",command=self._add_resources).pack(pady=5)
+        tk.Button(self, text="Agregar recurso(s)", command=self._add_resources).pack(
+            pady=5
+        )
 
         # --- Label de seleccionados ---
         self.selected_label = tk.Label(self, text="Seleccionados: ninguno")
         self.selected_label.pack(pady=5)
 
         # --- Botón aceptar ---
-        tk.Button(self,text="Aceptar",command=self._on_accept).pack(pady=10)
+        tk.Button(self, text="Aceptar", command=self._on_accept).pack(pady=10)
 
         # Modal
         self.transient(parent)
@@ -176,30 +320,83 @@ class ResourceSelectorDialog(tk.Toplevel):
         selection = self.listbox.curselection()
 
         if not selection:
-            messagebox.showwarning("Recursos","Seleccione al menos un recurso")
+            messagebox.showwarning("Recursos", "Seleccione al menos un recurso")
             return
 
-        # qty = int(self.qty_spin.get())
-
+        dict_temp = {}
         for idx in selection:
             name = self.listbox.get(idx)
-            self.result[name] = self.result.get(name, 0) #+ qty
+            dict_temp[name] = dict_temp.get(name, 0)
 
+        self.result = dict_temp.copy()
         self._update_label()
-        
+
     def _update_label(self):
-        texto =str(len(self.result.keys())) 
-        self.selected_label.config( text=f"Seleccionados: ({texto})" )
-    
+        texto = str(len(self.result.keys()))
+        self.selected_label.config(text=f"Seleccionados: ({texto})")
+
+    def _all_required_resources_present(self, resource_name, result_copy):
+        """Verifica si todos los recursos requeridos para resource_name ya están en self.result"""
+        required_list = self.global_requires.get(resource_name, [])
+
+        # Si no hay recursos requeridos, retornar True (no hay nada que verificar)
+        if not required_list:
+            return True
+
+        # Verificar si todos los recursos requeridos ya están en self.result
+        for req_resource in required_list:
+            if req_resource not in result_copy:
+                return False  # Falta al menos un recurso requerido
+
+        return True  # Todos los recursos requeridos ya están agregados
+
     def _on_accept(self):
+        r_result = self.result.copy()
+        for name in self.result.keys():
+            if self.global_requires.get(name):
+                # Verificar si los recursos requeridos ya están agregados
+                if not self._all_required_resources_present(name, r_result):
+                    dialog = RequiredResourcesDialog(
+                        self, r_result, self.global_requires, name
+                    )
+                    # Si el usuario canceló la ventana de recursos obligatorios, volver a mostrar ResourceSelectorDialog
+                    if not dialog.accepted:
+                        return
+                    r_result = dialog.result_resources
+
+        self.result.update(r_result)
+        # Verificar si todos los recursos tienen amount == 1
+        all_single_amount = all(
+            self.global_resources[name].amount == 1 for name in self.result.keys()
+        )
+
+        if all_single_amount:
+            # Procesar directamente sin mostrar ventana de cantidades
+            result_resources = {}
+            for resource_name in self.result.keys():
+                result_resources[resource_name] = Resource(resource_name, 1)
+            self.result = result_resources
+
+        else:
+            # Mostrar ventana para seleccionar cantidades
+            quantity_dialog = CuantitySelectedResources(
+                self, self.result, self.global_resources
+            )
+            # Si el usuario canceló la ventana de cantidades, volver a mostrar ResourceSelectorDialog
+            if not quantity_dialog.accepted:
+                return
+            self.result = quantity_dialog.result_resources
+
+        self.accepted = True
         self.destroy()
-    
+
     def refresh_list(self):
         lst = list(self.global_resources.values())
         for r in lst:
             if r.amount > 0:
                 self.listbox.insert(tk.END, r.name)
-  
+
+
 class PlannerGUI:
     def __init__(self, root: tk):
         self.root = root
@@ -208,26 +405,16 @@ class PlannerGUI:
 
         # load planner
         self.planner = Utils.create_planner()
-        
+
         # Events list (main area). Make it expand with the window.
-        self.events_listbox = tk.Listbox(root, font= 8,width=80, height=15)
+        self.events_listbox = tk.Listbox(root, font=8, width=80, height=15)
         self.events_listbox.grid(
-            row=0,  column=0, columnspan=3, padx=8, pady=30, sticky="nsew"
+            row=0, column=0, columnspan=3, padx=8, pady=30, sticky="nsew"
         )
 
         # Title of the listboxes
-        self.events_label = tk.Label(
-            root,
-            text="Global events",
-            font=(12)
-        )
-        self.events_label.grid(
-            row=0,
-            column=0,
-            columnspan=3,
-            pady=(6, 0),
-            sticky="n"
-        )
+        self.events_label = tk.Label(root, text="Global events", font=(12))
+        self.events_label.grid(row=0, column=0, columnspan=3, pady=(6, 0), sticky="n")
 
         # Configure grid weights so widgets grow when window is resized
         for i in range(4):
@@ -235,7 +422,7 @@ class PlannerGUI:
         root.rowconfigure(0, weight=1)
 
         # Calendar area on the right
-        self.calendar_frame = tk.Frame(root, bd=1, relief="sunken")  
+        self.calendar_frame = tk.Frame(root, bd=1, relief="sunken")
         self.calendar_frame.grid(
             row=0, column=3, rowspan=1, sticky="nsew", padx=8, pady=30
         )
@@ -250,96 +437,92 @@ class PlannerGUI:
         self._render_calendar()
 
         # Buttons (use sticky so they expand horizontally)
-        tk.Button(root, text="Refresh", font= 10, command=self.refresh).grid(
+        tk.Button(root, text="Refresh", font=10, command=self.refresh).grid(
             row=1, column=0, sticky="we", padx=4, pady=4
         )
-        tk.Button(root, text="Add Event", font= 10, command=self.add_event_dialog).grid(
+        tk.Button(root, text="Add Event", font=10, command=self.add_event_dialog).grid(
             row=1, column=1, sticky="we", padx=4, pady=4
         )
-        tk.Button(root, text="Delete Event", font= 10, command=self.delete_selected).grid(
-            row=1, column=2, sticky="we", padx=4, pady=4
-        )
-        tk.Button(root, text="Save", font= 10, command=self.save).grid(
+        tk.Button(
+            root, text="Delete Event", font=10, command=self.delete_selected
+        ).grid(row=1, column=2, sticky="we", padx=4, pady=4)
+        tk.Button(root, text="Save", font=10, command=self.save).grid(
             row=1, column=3, sticky="we", padx=4, pady=4
         )
-        tk.Button(root, text="Load Planner", font= 10, command=self.load_planner).grid(
+        tk.Button(root, text="Load Planner", font=10, command=self.load_planner).grid(
             row=2, column=0, sticky="we", padx=4, pady=4
         )
-        tk.Button(root, text="Find Next Slot", font= 10, command=self.find_slot).grid(
+        tk.Button(root, text="Find Next Slot", font=10, command=self.find_slot).grid(
             row=2, column=1, sticky="we", padx=4, pady=4
         )
-        tk.Button(root, text="View Details", font= 10, command=self.view_selected).grid(
+        tk.Button(root, text="View Details", font=10, command=self.view_selected).grid(
             row=2, column=2, sticky="we", padx=4, pady=4
         )
 
         self.refresh()
-   
+
     # Aprobado x Chayanne
     def refresh(self):
         self.events_listbox.delete(0, tk.END)
         for dct in self.planner.get_event_list():
-                self.events_listbox.insert(tk.END, dct["name"])
+            self.events_listbox.insert(tk.END, dct["name"])
         self._render_calendar()
 
-    def parse_datetime(self, text: str):
-        try:
-            return datetime.fromisoformat(text)
-        except Exception:
-            for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M"):
-                try:
-                    return datetime.strptime(text, fmt)
-                except Exception:
-                    continue
-        raise ValueError("Invalid datetime format")
-
-    #TODO corregir este metodo xq no llama al metodo del Planner. 
-    #      Ademas agregarle todas las opciones necesarias para crear un nuevo evento legal 
+    # Aprobado x Chayanne
     def add_event_dialog(self):
-        # name = simpledialog.askstring("Event name", "Name:")
-        # if not name:
-        #     return
-        
-        # date = MultiInputDialog(root, "Event Start")
-        # if not date.result:
-        #     return
-        # s_y,s_m,s_d,s_h,s_min = date.result
-        
-        # date = MultiInputDialog(root, "Event End")
-        # if not date.result:
-        #     return
-        # e_y,e_m,e_d,e_h,e_min = date.result
-        
-        # try:
-        #     start = datetime(s_y,s_m,s_d,s_h,s_min)
-        #     end = datetime(e_y,e_m,e_d,e_h,e_min)
-            
-        #     # start = self.parse_datetime(start_s)
-        #     # end = self.parse_datetime(end_s)
-        # except Exception as ex:
-        #     messagebox.showerror("Invalid date", str(ex))
-        #     return
+        name = simpledialog.askstring("Event name", "Name:")
+        if not name:
+            return
+
+        accepted_s = False
+        date = MultiInputDialog(root, "Event Start")
+        if not date.result:
+            return
+        s_y, s_m, s_d, s_h, s_min = date.result
+        accepted_s = date.accepted
+
+        accepted_e = False
+        date = MultiInputDialog(root, "Event End")
+        if not date.result:
+            return
+        e_y, e_m, e_d, e_h, e_min = date.result
+        accepted_e = date.accepted
+
+        try:
+            start = datetime(s_y, s_m, s_d, s_h, s_min)
+            end = datetime(e_y, e_m, e_d, e_h, e_min)
+        except Exception as ex:
+            messagebox.showerror("Invalid date", str(ex))
+            return
 
         resources = {}
-        
-        dialog = ResourceSelectorDialog(root, self.planner._resources)
-        dialog = CuantitySelectedResources(root,dialog.result,self.planner._resources)
+
+        accepted_r = False
+        dialog = ResourceSelectorDialog(
+            root, self.planner._resources, self.planner.requires
+        )
+
         if dialog.result:
             resources = dialog.result
-            
-            
+            accepted_r = dialog.accepted
 
         # validate using planner.is_valid
-        try:
-            self.planner.add_events(start, end, resources)
-        except ValueError as ex:
-            messagebox.showerror("Exception: ", str(ex))
-            return
-        except DecisionRequired as d:
-                decision = messagebox.askyesno("Needed confirmation", 
-                                               f"{str(d)} \n Do you want to reewrite it?" )
-        
+        if all((accepted_s, accepted_e, accepted_r)):
+            event = Event(name, start, end, resources)
+            try:
+                self.planner.add_events(event)
+            except ValueError as ex:
+                messagebox.showerror("Exception: ", str(ex))
+                return
+            except DecisionRequired as d:
+                decision = messagebox.askyesno(
+                    "Needed confirmation", f"{str(d)} \n Do you want to reewrite it?"
+                )
+                if decision:
+                    self.planner.force_add(event)
+
         self.refresh()
-        
+
     # Aprobado x Chayanne
     def delete_selected(self):
         sel = self.events_listbox.curselection()
@@ -348,20 +531,20 @@ class PlannerGUI:
             return
         idx = sel[0]
         name = self.events_listbox.get(idx)
-        
+
         if messagebox.askyesno("Delete", f"Delete event '{name}'?"):
-           try:
-            self.planner.remove_event(name)
-            self.refresh()
-            self._render_calendar()
-           except Exception as e:
+            try:
+                self.planner.remove_event(name)
+                self.refresh()
+                self._render_calendar()
+            except Exception as e:
                 messagebox.showerror("Error", str(e))
 
     # Aprobado x Chayanne
     def save(self):
         try:
             filename = simpledialog.askstring("File name", "")
-            save_planner(filename,self.planner, None)
+            save_planner(filename, self.planner, None)
             messagebox.showinfo("Saved", "Planner saved to disk")
         except Exception as ex:
             messagebox.showerror("Save error", str(ex))
@@ -402,17 +585,18 @@ class PlannerGUI:
 
     # Aprobado x Chayanne
     def load_planner(self):
-        
-        path = filedialog.askopenfile(title="Cargar planner",
-                                      initialdir=Path.cwd().parent,  # carpeta del proyecto
-                                      filetypes=[("Planner JSON", "*.json")]
+
+        path = filedialog.askopenfile(
+            title="Cargar planner",
+            initialdir=Path.cwd().parent,  # carpeta del proyecto
+            filetypes=[("Planner JSON", "*.json")],
         )
         # load planner
         try:
             self.planner = load_planner(path.name)
         except Exception as ex:
             messagebox.showerror("Invalid path", str(ex))
-            
+
         self.refresh()
 
     # enderegion
@@ -455,31 +639,29 @@ class PlannerGUI:
         first_weekday, ndays = calendar.monthrange(self.cal_year, self.cal_month)
         row = 0
         col = first_weekday
-        
+
         # permitir que el grid del calendario se expanda
         for i in range(7):
-            self.days_grid.columnconfigure(i, weight=1) 
+            self.days_grid.columnconfigure(i, weight=1)
         for i in range(6):
-            self.days_grid.rowconfigure(i, weight=1)     
-        
+            self.days_grid.rowconfigure(i, weight=1)
+
         for d in range(1, ndays + 1):
             dt = date(self.cal_year, self.cal_month, d)
             btn = tk.Button(
                 self.days_grid,
                 text=str(d),
                 font=(12),
-                # width=4,
-                # height=4,
                 command=lambda dt=dt: self._on_day_click(dt),
             )
+
             if self._is_day_occupied(dt):
                 btn.configure(bg="#ffcccc")
             else:
                 btn.configure(bg="#ccffcc")
-        
+
             btn.grid(row=row, column=col, padx=2, pady=2, sticky="nnsew")
 
-            
             self.day_buttons[dt] = btn
 
             col += 1
@@ -487,6 +669,7 @@ class PlannerGUI:
                 col = 0
                 row += 1
 
+    # Aprobado x Chayanne
     def _is_day_occupied(self, dt: date) -> bool:
         for ev in self.planner.events.values():
             ev_start_date = ev.start.date()
@@ -504,7 +687,10 @@ class PlannerGUI:
             self.day_buttons[dt].configure(relief="sunken")
 
         self.planner.sort_events()
-        evs = [ev for ev in self.planner.events.values() if ev.start.date() <= dt <= ev.end.date()
+        evs = [
+            ev
+            for ev in self.planner.events.values()
+            if ev.start.date() <= dt <= ev.end.date()
         ]
         if not evs:
             messagebox.showinfo(
@@ -518,6 +704,7 @@ class PlannerGUI:
             )
         messagebox.showinfo(f"Events on {dt.isoformat()}", "\n".join(lines))
 
+    # Aprobado x Chayanne
     def _prev_month(self):
         if self.cal_month == 1:
             self.cal_month = 12
@@ -526,6 +713,7 @@ class PlannerGUI:
             self.cal_month -= 1
         self._render_calendar()
 
+    # Aprobado x Chayanne
     def _next_month(self):
         if self.cal_month == 12:
             self.cal_month = 1

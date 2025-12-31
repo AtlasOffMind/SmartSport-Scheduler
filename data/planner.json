@@ -2,7 +2,7 @@
   "resources": {
     "Cancha de Football": {
       "name": "Cancha de Football",
-      "amount": 0
+      "amount": 1
     },
     "Cancha de Tenis": {
       "name": "Cancha de Tenis",
@@ -10,15 +10,15 @@
     },
     "Cancha de Basket (techada)": {
       "name": "Cancha de Basket (techada)",
-      "amount": 0
+      "amount": 1
     },
     "Cancha de Basket (aire libre)": {
       "name": "Cancha de Basket (aire libre)",
-      "amount": 2
+      "amount": 1
     },
     "Cancha de FootSal": {
       "name": "Cancha de FootSal",
-      "amount": 0
+      "amount": 1
     },
     "Cancha de Boleyball": {
       "name": "Cancha de Boleyball",
@@ -66,7 +66,7 @@
     },
     "Pelota de Football": {
       "name": "Pelota de Football",
-      "amount": 12
+      "amount": 15
     },
     "Pelota de Footsal": {
       "name": "Pelota de Footsal",
@@ -186,11 +186,11 @@
     },
     "Arbitro": {
       "name": "Arbitro",
-      "amount": 2
+      "amount": 3
     },
     "Personal de primeros auxilios": {
       "name": "Personal de primeros auxilios",
-      "amount": 1
+      "amount": 3
     },
     "Salva Vidas": {
       "name": "Salva Vidas",
