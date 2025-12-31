@@ -57,17 +57,59 @@ El planificador valida automáticamente cada evento a través de 4 niveles:
 ### Estructura del Proyecto
 ```
 SmartSport Scheduler/
-├── Scripts/
-│   └── Proyecto.py          # Backend: lógica de negocio y persistencia
-├── frontend/
-│   └── gui.py               # Interfaz gráfica Tkinter
+├── backend/                  # Lógica de negocio (backend)
+│   ├── __init__.py
+│   ├── models/               # Modelos de datos
+│   │   ├── __init__.py
+│   │   ├── exceptions.py     # Excepciones personalizadas
+│   │   ├── resource.py       # Clase Resource
+│   │   ├── event.py          # Clase Event
+│   │   └── planner.py        # Clase Planner (motor de validación)
+│   └── utils/                # Utilidades y persistencia
+│       ├── __init__.py
+│       ├── utils.py          # Utilidades del sistema
+│       └── persistence.py    # Funciones de guardado/carga JSON
+├── Frontend/                 # Interfaz gráfica (frontend)
+│   ├── __init__.py
+│   ├── gui.py                # Ventana principal (PlannerGUI)
+│   └── dialogs/              # Diálogos modales
+│       ├── __init__.py
+│       ├── utils_gui.py      # Utilidades GUI (centrado de ventanas)
+│       ├── multi_input_dialog.py          # Entrada de fecha/hora
+│       ├── resource_selector_dialog.py    # Selector de recursos
+│       ├── required_resources_dialog.py   # Notificación co-requisitos
+│       └── cuantity_selected_resources.py # Selección de cantidades
 ├── tests/
-│   └── test_planner.py      # Tests unitarios
+│   └── test_planner.py       # Tests unitarios
 ├── data/                     # Almacenamiento JSON (generado en runtime)
+├── main.py                   # Punto de entrada de la aplicación
 └── README.md
 ```
 
-### Backend (`Scripts/Proyecto.py`)
+### Ventajas de la Arquitectura Modular
+
+**Separación de Responsabilidades:**
+- **backend/models/**: Clases de datos puras sin lógica de presentación
+- **backend/utils/**: Funciones utilitarias y persistencia
+- **Frontend/dialogs/**: Componentes de UI reutilizables
+- **Frontend/gui.py**: Orquestación de la interfaz principal
+
+**Mantenibilidad:**
+- Cada clase en su propio archivo facilita navegación y edición
+- Imports explícitos mejoran trazabilidad del código
+- Modificaciones aisladas sin afectar otros módulos
+
+**Escalabilidad:**
+- Agregar nuevos recursos: modificar solo `backend/utils/utils.py`
+- Nuevos diálogos: crear archivo en `Frontend/dialogs/`
+- Nuevas validaciones: extender `backend/models/planner.py`
+
+**Testabilidad:**
+- Módulos independientes facilitan unit testing
+- Mock de dependencias más simple
+- Tests aislados por funcionalidad
+
+### Backend (`backend/`)
 
 #### Clases Principales
 
@@ -145,11 +187,13 @@ Motor principal que gestiona la programación y validación.
 - Serializa un Planner a diccionario
 - Convierte datetimes a formato ISO
 
-### Frontend (`frontend/gui.py`)
+### Frontend (`Frontend/`)
 
-#### Componentes de Interfaz
+El frontend está organizado de forma modular con separación de responsabilidades:
 
-**1. PlannerGUI**
+#### Ventana Principal (`gui.py`)
+
+**PlannerGUI**
 Clase principal que gestiona la ventana de la aplicación.
 
 Elementos principales:
@@ -162,9 +206,9 @@ Funciones destacadas:
 - `add_event_dialog()`: Orquesta el flujo completo de creación de eventos
 - `delete_selected()`: Elimina evento seleccionado con confirmación
 - `_render_calendar()`: Dibuja calendario con indicadores de ocupación
-- `_on_day_click(date)`: Muestra eventos del día seleccionado
+#### Diálogos Modales (`dialogs/`)
 
-**2. MultiInputDialog**
+**1. MultiInputDialog** (`multi_input_dialog.py`)
 Diálogo modal para capturar fecha/hora (año, mes, día, hora, minutos).
 
 Variables:
@@ -174,9 +218,9 @@ Variables:
 Validación:
 - Convierte entradas a enteros
 - Muestra error si los datos son inválidos
-- Solo marca `accepted=True` si la validación es exitosa
+- ResourceSelectorDialog (`resource_selector_dialog.py`) si la validación es exitosa
 
-**3. ResourceSelectorDialog**
+**2. ResourceSelectorDialog** (`resource_selector_dialog.py`)
 Diálogo para seleccionar recursos de un listbox múltiple.
 
 Flujo:
@@ -188,7 +232,7 @@ Flujo:
 6. Abre `CuantitySelectedResources` para especificar cantidades
 7. Retorna diccionario `{nombre_recurso: Resource}`
 
-**4. RequiredResourcesDialog**
+**3. RequiredResourcesDialog** (`RequiredResourcesDialog`)
 Notifica al usuario sobre recursos obligatorios que se agregarán automáticamente.
 
 Comportamiento:
@@ -197,7 +241,7 @@ Comportamiento:
 - Al aceptar, agrega recursos faltantes a `result_resources`
 - Si se cancela, no continúa el flujo de creación
 
-**5. CuantitySelectedResources**
+**4. CuantitySelectedResources** (`cuantity_selected_resources.py`)
 Diálogo dinámico que ajusta su tamaño según cantidad de recursos.
 
 Características:
@@ -207,7 +251,7 @@ Características:
 - Valida que cantidades sean válidas antes de cerrar
 - Retorna diccionario `{nombre: Resource(nombre, cantidad)}`
 
-**6. Utils_Gui**
+**5. Utils_Gui** (`utils_gui.py`)
 Clase utilitaria con método `center_window(window)` para centrar ventanas en pantalla.
 
 #### Flujo de Creación de Eventos
@@ -287,16 +331,10 @@ cd SmartSport-Scheduler
 ### 2. Ejecutar la aplicación
 ```bash
 # Windows
-py -3 frontend/gui.py
+py main.py
 
 # Linux/macOS
-python3 frontend/gui.py
-```
-
-### 3. Ejecutar tests
-```bash
-# Desde la raíz del proyecto
-python -m unittest discover -s tests
+python3 main.py
 ```
 
 ---
@@ -385,10 +423,10 @@ Ejemplo de archivo guardado:
 
 ## Solución de Problemas
 
-### Error: "Import Proyecto could not be resolved"
-**Causa:** El LSP del editor no encuentra el módulo  
-**Impacto:** Solo afecta editor, no runtime  
-**Solución:** Ignorar advertencia o crear `__init__.py` en `Scripts/`
+### Error: "ModuleNotFoundError: No module named 'backend'"
+**Causa:** Python no encuentra los módulos del proyecto  
+**Solución:** Ejecutar siempre desde la raíz del proyecto con `py main.py`  
+**Alternativa:** Verificar que `__init__.py` existe en `backend/` y `Frontend/`
 
 ### Evento válido se rechaza
 **Verificar:**

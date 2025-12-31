@@ -4,398 +4,19 @@ from datetime import datetime, date
 import calendar
 import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog
-from dataclasses import dataclass
 
-# make Scripts importable
+# make backend importable
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS = ROOT / "Scripts"
-sys.path.insert(0, str(SCRIPTS))
+sys.path.insert(0, str(ROOT))
 
-from Proyecto import (
-    load_planner,
-    save_planner,
-    Resource,
-    Event,
-    Utils,
-    DecisionRequired,
+from backend import (
+    load_planner,save_planner,create_planner,
+    Event,DecisionRequired,
 )
 
-
-# Aprobado x Chayanne
-@dataclass
-class Utils_Gui:
-    def center_window(window):
-        window.update_idletasks()
-
-        w = window.winfo_width()
-        h = window.winfo_height()
-
-        screen_w = window.winfo_screenwidth()
-        screen_h = window.winfo_screenheight()
-
-        x = (screen_w - w) // 2
-        y = (screen_h - h) // 2
-
-        window.geometry(f"{w}x{h}+{x}+{y}")
-
-
-# Aprobado x Chayanne
-class MultiInputDialog(tk.Toplevel):
-    def __init__(self, parent, title: str):
-        super().__init__(parent)
-
-        self.accepted = False
-
-        self.result = None
-        self.title(title)
-
-        self.withdraw()
-        self.geometry("300x200")
-        Utils_Gui.center_window(self)
-        self.deiconify()
-
-        self.resizable(False, False)
-
-        tk.Label(self, text="year").grid(row=0, column=0, padx=10, pady=5)
-        tk.Label(self, text="month").grid(row=2, column=0, padx=10, pady=5)
-        tk.Label(self, text="day").grid(row=4, column=0, padx=10, pady=5)
-        tk.Label(self, text="hour").grid(row=0, column=1, padx=10, pady=5)
-        tk.Label(self, text="min").grid(row=2, column=1, padx=10, pady=5)
-
-        self.year_entry = tk.Entry(self)
-        self.month_entry = tk.Entry(self)
-        self.day_entry = tk.Entry(self)
-        self.hour_entry = tk.Entry(self)
-        self.min_entry = tk.Entry(self)
-
-        self.year_entry.grid(row=1, column=0, padx=10)
-        self.month_entry.grid(row=3, column=0, padx=10)
-        self.day_entry.grid(row=5, column=0, padx=10)
-        self.hour_entry.grid(row=1, column=1, padx=10)
-        self.min_entry.grid(row=3, column=1, padx=10)
-
-        tk.Button(self, text="Aceptar", command=self._on_ok).grid(
-            row=7, column=1, columnspan=2, pady=15
-        )
-
-        # comportamiento modal
-        self.transient(parent)
-        self.grab_set()
-        self.wait_window(self)
-
-    def _on_ok(self):
-        try:
-            year = int(self.year_entry.get())
-            month = int(self.month_entry.get())
-            day = int(self.day_entry.get())
-            hour = int(self.hour_entry.get())
-        except ValueError as v:
-            messagebox.showerror("Invalid date", "Invalid date")
-            return
-        try:
-            min = int(self.min_entry.get())
-        except ValueError:
-            min = 0
-
-        self.result = (year, month, day, hour, min)
-        self.accepted = True
-        self.destroy()
-
-
-# Aprobado x Chayanne
-class RequiredResourcesDialog(tk.Toplevel):
-    """Ventana que muestra recursos obligatorios"""
-
-    def __init__(
-        self,
-        parent,
-        selected_resources: dict[str, int],
-        requires_dict: dict[str, list[str]],
-        resource_name,
-    ):
-        super().__init__(parent)
-
-        self.withdraw()
-        self.title("Recursos Obligatorios")
-        self.geometry("500x300")
-        Utils_Gui.center_window(self)
-        self.deiconify()
-
-        self.accepted = False  # Flag para verificar si fue aceptada
-        self.result_resources: dict[str, int] = selected_resources
-
-        # Obtener recursos obligatorios para este recurso
-        self.required_list = requires_dict.get(resource_name, [])
-
-        # Mensaje informativo
-        msg = f"Como ha usado el recurso '{resource_name}' necesita incluir los recursos obligatorios que van con este:"
-        tk.Label(
-            self, text=msg, font=("Arial", 10), wraplength=450, justify="left"
-        ).pack(padx=15, pady=15)
-
-        # Listbox con recursos obligatorios
-        frame = tk.Frame(self)
-        frame.pack(padx=15, pady=10, fill="both", expand=True)
-
-        tk.Label(
-            frame, text="Recursos que se agregarán:", font=("Arial", 9, "bold")
-        ).pack(anchor="w")
-
-        listbox = tk.Listbox(frame, height=8)
-        listbox.pack(fill="both", expand=True, pady=5)
-
-        for req_resource in self.required_list:
-            selected_r_names = selected_resources.keys()
-            if req_resource not in selected_r_names:
-                listbox.insert(tk.END, f"• {req_resource}")
-
-        # Botón OK (ahora con lambda para ejecutar al hacer click)
-        tk.Button(self, text="Aceptar", command=self._on_accept).pack(pady=10)
-
-        self.transient(parent)
-        self.grab_set()
-        self.wait_window(self)
-
-    def _on_accept(self):
-        # Agregar recursos obligatorios a la lista
-        for req_resource in self.required_list:
-            self.result_resources[req_resource] = self.result_resources.get(
-                req_resource, 0
-            )
-
-        self.accepted = True  # Marcar como aceptada
-        self.destroy()
-
-
-# Aprobado x Chayanne
-class CuantitySelectedResources(tk.Toplevel):
-    def __init__(
-        self,
-        parent,
-        resources_selected: dict[str, int],
-        original_dict: dict[str, Resource],
-    ):
-        super().__init__(parent)
-
-        self.withdraw()
-        self.title("Seleccionar cantidad de recursos")
-        self.accepted = False  # Flag para verificar si fue aceptada
-        self.result_resources: dict[str, Resource] = {}
-        self.spinbox_dict: dict[str, tk.Spinbox] = {}
-
-        # Header con títulos
-        header_frame = tk.Frame(self)
-        header_frame.grid(
-            row=0, column=0, columnspan=2, padx=10, pady=10, sticky="nsew"
-        )
-        tk.Label(header_frame, text="Recurso", font=("Arial", 10, "bold")).pack(
-            side="left", expand=True
-        )
-        tk.Label(
-            header_frame, text="Cantidad disponible", font=("Arial", 10, "bold")
-        ).pack(side="left", padx=20)
-        tk.Label(header_frame, text="Cantidad a usar", font=("Arial", 10, "bold")).pack(
-            side="left", padx=20
-        )
-
-        r = 1
-
-        # Crear Spinbox para cada recurso seleccionado
-        for resource_name in resources_selected.keys():
-            if original_dict[resource_name].amount > 1:
-                resource = original_dict[resource_name]
-                max_amount = resource.amount
-
-                # Label del recurso
-                tk.Label(self, text=resource_name).grid(
-                    row=r, column=0, padx=10, pady=8, sticky="w"
-                )
-
-                # Label cantidad disponible
-                tk.Label(self, text=str(max_amount)).grid(
-                    row=r, column=0, padx=200, pady=8
-                )
-
-                # Spinbox para cantidad a usar
-                spinbox = tk.Spinbox(self, from_=1, to=max_amount, width=5)
-                spinbox.grid(row=r, column=1, padx=10, pady=8)
-                self.spinbox_dict[resource_name] = spinbox
-
-                r += 1
-            else:
-                self.spinbox_dict[resource_name] = 1
-
-        # Botón Aceptar
-        tk.Button(
-            self, text="Aceptar", command=self._on_accept, bg="#4CAF50", fg="white"
-        ).grid(row=r, column=0, columnspan=2, pady=20)
-
-        # Ajustar tamaño de ventana según contenido
-        self.update_idletasks()
-        width = self.winfo_reqwidth() + 20
-        height = self.winfo_reqheight() + 20
-        self.geometry(f"{width}x{height}")
-        Utils_Gui.center_window(self)
-        self.deiconify()
-
-        self.transient(parent)
-        self.grab_set()
-        self.wait_window(self)
-
-    def _on_accept(self):
-        for resource_name, spinbox in self.spinbox_dict.items():
-            if isinstance(spinbox, tk.Spinbox):
-                try:
-                    amount = int(spinbox.get())
-                    if amount > 0:
-                        self.result_resources[resource_name] = Resource(
-                            resource_name, amount
-                        )
-                except ValueError:
-                    messagebox.showerror(
-                        "Error", f"Cantidad inválida para {resource_name}"
-                    )
-                    return
-
-            else:
-                amount = spinbox
-                self.result_resources[resource_name] = Resource(resource_name, amount)
-        self.accepted = True  # Marcar como aceptada
-        self.destroy()
-
-
-# Aprobado x Chayanne
-class ResourceSelectorDialog(tk.Toplevel):
-    global_resources = {}
-    global_requires = {}
-
-    def __init__(self, parent, resources, planner_requires):
-        super().__init__(parent)
-
-        self.accepted = False
-
-        self.global_resources = resources
-        self.global_requires = planner_requires
-
-        self.withdraw()
-        self.title("Seleccionar recursos")
-        self.geometry("400x500")
-        Utils_Gui.center_window(self)
-        # self.resizable(False, False)
-        self.deiconify()
-
-        self.result: dict[str, int] = {}
-
-        # --- Listbox de recursos ---
-        tk.Label(self, text="Recursos disponibles").pack(pady=(10, 0))
-
-        self.listbox = tk.Listbox(self, selectmode=tk.MULTIPLE, height=20)
-
-        self.listbox.pack(fill="x", padx=10)
-
-        self.refresh_list()
-
-        # --- Cantidad ---
-        qty_frame = tk.Frame(self)
-        qty_frame.pack(pady=10)
-
-        # --- Botón agregar ---
-        tk.Button(self, text="Agregar recurso(s)", command=self._add_resources).pack(
-            pady=5
-        )
-
-        # --- Label de seleccionados ---
-        self.selected_label = tk.Label(self, text="Seleccionados: ninguno")
-        self.selected_label.pack(pady=5)
-
-        # --- Botón aceptar ---
-        tk.Button(self, text="Aceptar", command=self._on_accept).pack(pady=10)
-
-        # Modal
-        self.transient(parent)
-        self.grab_set()
-        self.wait_window(self)
-
-    def _add_resources(self):
-        selection = self.listbox.curselection()
-
-        if not selection:
-            messagebox.showwarning("Recursos", "Seleccione al menos un recurso")
-            return
-
-        dict_temp = {}
-        for idx in selection:
-            name = self.listbox.get(idx)
-            dict_temp[name] = dict_temp.get(name, 0)
-
-        self.result = dict_temp.copy()
-        self._update_label()
-
-    def _update_label(self):
-        texto = str(len(self.result.keys()))
-        self.selected_label.config(text=f"Seleccionados: ({texto})")
-
-    def _all_required_resources_present(self, resource_name, result_copy):
-        """Verifica si todos los recursos requeridos para resource_name ya están en self.result"""
-        required_list = self.global_requires.get(resource_name, [])
-
-        # Si no hay recursos requeridos, retornar True (no hay nada que verificar)
-        if not required_list:
-            return True
-
-        # Verificar si todos los recursos requeridos ya están en self.result
-        for req_resource in required_list:
-            if req_resource not in result_copy:
-                return False  # Falta al menos un recurso requerido
-
-        return True  # Todos los recursos requeridos ya están agregados
-
-    def _on_accept(self):
-        r_result = self.result.copy()
-        for name in self.result.keys():
-            if self.global_requires.get(name):
-                # Verificar si los recursos requeridos ya están agregados
-                if not self._all_required_resources_present(name, r_result):
-                    dialog = RequiredResourcesDialog(
-                        self, r_result, self.global_requires, name
-                    )
-                    # Si el usuario canceló la ventana de recursos obligatorios, volver a mostrar ResourceSelectorDialog
-                    if not dialog.accepted:
-                        return
-                    r_result = dialog.result_resources
-
-        self.result.update(r_result)
-        # Verificar si todos los recursos tienen amount == 1
-        all_single_amount = all(
-            self.global_resources[name].amount == 1 for name in self.result.keys()
-        )
-
-        if all_single_amount:
-            # Procesar directamente sin mostrar ventana de cantidades
-            result_resources = {}
-            for resource_name in self.result.keys():
-                result_resources[resource_name] = Resource(resource_name, 1)
-            self.result = result_resources
-
-        else:
-            # Mostrar ventana para seleccionar cantidades
-            quantity_dialog = CuantitySelectedResources(
-                self, self.result, self.global_resources
-            )
-            # Si el usuario canceló la ventana de cantidades, volver a mostrar ResourceSelectorDialog
-            if not quantity_dialog.accepted:
-                return
-            self.result = quantity_dialog.result_resources
-
-        self.accepted = True
-        self.destroy()
-
-    def refresh_list(self):
-        lst = list(self.global_resources.values())
-        for r in lst:
-            if r.amount > 0:
-                self.listbox.insert(tk.END, r.name)
-
+from .dialogs import (
+    MultiInputDialog,ResourceSelectorDialog
+)
 
 class PlannerGUI:
     def __init__(self, root: tk):
@@ -404,7 +25,7 @@ class PlannerGUI:
         root.minsize(600, 300)
 
         # load planner
-        self.planner = Utils.create_planner()
+        self.planner = create_planner()
 
         # Events list (main area). Make it expand with the window.
         self.events_listbox = tk.Listbox(root, font=8, width=80, height=15)
@@ -475,14 +96,14 @@ class PlannerGUI:
             return
 
         accepted_s = False
-        date = MultiInputDialog(root, "Event Start")
+        date = MultiInputDialog(self.root, "Event Start")
         if not date.result:
             return
         s_y, s_m, s_d, s_h, s_min = date.result
         accepted_s = date.accepted
 
         accepted_e = False
-        date = MultiInputDialog(root, "Event End")
+        date = MultiInputDialog(self.root, "Event End")
         if not date.result:
             return
         e_y, e_m, e_d, e_h, e_min = date.result
@@ -499,7 +120,7 @@ class PlannerGUI:
 
         accepted_r = False
         dialog = ResourceSelectorDialog(
-            root, self.planner._resources, self.planner.requires
+            self.root, self.planner._resources, self.planner.requires
         )
 
         if dialog.result:
@@ -588,7 +209,7 @@ class PlannerGUI:
 
         path = filedialog.askopenfile(
             title="Cargar planner",
-            initialdir=Path.cwd().parent,  # carpeta del proyecto
+            initialdir=Path.cwd(),  # carpeta del proyecto
             filetypes=[("Planner JSON", "*.json")],
         )
         # load planner
@@ -721,9 +342,3 @@ class PlannerGUI:
         else:
             self.cal_month += 1
         self._render_calendar()
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = PlannerGUI(root)
-    root.mainloop()
