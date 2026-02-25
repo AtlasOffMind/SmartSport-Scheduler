@@ -10,42 +10,64 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from backend import (
-    load_planner,save_planner,create_planner,
-    Event,DecisionRequired,
+    load_planner,
+    save_planner,
+    create_planner,
+    Event,
+    DecisionRequired,
 )
 
-from .dialogs import (
-    MultiInputDialog,ResourceSelectorDialog
-)
+from .dialogs import MultiInputDialog, ResourceSelectorDialog
+
 
 class PlannerGUI:
     def __init__(self, root: tk):
         self.root = root
         root.title("SmartSport Scheduler")
-        root.minsize(600, 300)
+        root.minsize(800, 400)
 
         # load planner
         self.planner = create_planner()
 
+        # Configure grid weights so widgets grow when window is resized
+        for i in range(8):
+            root.columnconfigure(i, weight=1)
+        root.rowconfigure(1, weight=1)
+
+        # ===== TOOLBAR (Row 0) =====
+        toolbar = tk.Frame(root, relief="raised", bd=1)
+        toolbar.grid(row=0, column=0, columnspan=8, sticky="ew", padx=0, pady=0)
+
+        buttons = [
+            ("Refresh", self.refresh),
+            ("Add Event", self.add_event_dialog),
+            ("Delete Event", self.delete_selected),
+            ("Save", self.save),
+            ("Load Planner", self.load_planner),
+            ("Find Next Slot", self.find_slot),
+            ("View Details", self.view_selected),
+        ]
+
+        for idx, (text, command) in enumerate(buttons):
+            btn = tk.Button(toolbar, text=text, command=command, font=8, padx=5, pady=3)
+            btn.pack(side="left", padx=2, pady=4)
+            toolbar.columnconfigure(idx, weight=1)
+
+        # ===== CONTENT AREA (Row 1) =====
+        # Title of the listboxes
+        self.events_label = tk.Label(root, text="Global events", font=(12))
+        self.events_label.grid(row=1, column=0, columnspan=7, pady=(6, 0), sticky="n")
+
         # Events list (main area). Make it expand with the window.
         self.events_listbox = tk.Listbox(root, font=8, width=80, height=15)
         self.events_listbox.grid(
-            row=0, column=0, columnspan=3, padx=8, pady=30, sticky="nsew"
+            row=1, column=0, columnspan=7, padx=8, pady=8, sticky="nsew"
         )
-
-        # Title of the listboxes
-        self.events_label = tk.Label(root, text="Global events", font=(12))
-        self.events_label.grid(row=0, column=0, columnspan=3, pady=(6, 0), sticky="n")
-
-        # Configure grid weights so widgets grow when window is resized
-        for i in range(4):
-            root.columnconfigure(i, weight=1)
-        root.rowconfigure(0, weight=1)
 
         # Calendar area on the right
         self.calendar_frame = tk.Frame(root, bd=1, relief="sunken")
         self.calendar_frame.grid(
-            row=0, column=3, rowspan=1, sticky="nsew", padx=8, pady=30
+            row=1, column=7, sticky="nsew", padx=8, pady=8
         )
 
         # calendar state
@@ -57,31 +79,7 @@ class PlannerGUI:
         self._build_calendar_widgets()
         self._render_calendar()
 
-        # Buttons (use sticky so they expand horizontally)
-        tk.Button(root, text="Refresh", font=10, command=self.refresh).grid(
-            row=1, column=0, sticky="we", padx=4, pady=4
-        )
-        tk.Button(root, text="Add Event", font=10, command=self.add_event_dialog).grid(
-            row=1, column=1, sticky="we", padx=4, pady=4
-        )
-        tk.Button(
-            root, text="Delete Event", font=10, command=self.delete_selected
-        ).grid(row=1, column=2, sticky="we", padx=4, pady=4)
-        tk.Button(root, text="Save", font=10, command=self.save).grid(
-            row=1, column=3, sticky="we", padx=4, pady=4
-        )
-        tk.Button(root, text="Load Planner", font=10, command=self.load_planner).grid(
-            row=2, column=0, sticky="we", padx=4, pady=4
-        )
-        tk.Button(root, text="Find Next Slot", font=10, command=self.find_slot).grid(
-            row=2, column=1, sticky="we", padx=4, pady=4
-        )
-        tk.Button(root, text="View Details", font=10, command=self.view_selected).grid(
-            row=2, column=2, sticky="we", padx=4, pady=4
-        )
-
         self.refresh()
-
     # Aprobado x Chayanne
     def refresh(self):
         self.events_listbox.delete(0, tk.END)
@@ -109,6 +107,7 @@ class PlannerGUI:
         e_y, e_m, e_d, e_h, e_min = date.result
         accepted_e = date.accepted
 
+# TODO mostrar todos los errores
         try:
             start = datetime(s_y, s_m, s_d, s_h, s_min)
             end = datetime(e_y, e_m, e_d, e_h, e_min)
@@ -215,14 +214,19 @@ class PlannerGUI:
         # load planner
         try:
             self.planner = load_planner(path.name)
+        except AttributeError as ex:
+            pass
         except Exception as ex:
-            messagebox.showerror("Invalid path", str(ex))
+            messagebox.showerror(f"Error", str(ex))
 
         self.refresh()
 
     # enderegion
 
     # ------------------ Calendar helpers ------------------
+
+    # TODO arreglar el calendario para q en la parte de abajo salgan las horas predeterminadas del dia y
+    # q cuando toques un dia te salgan los eventos correspondientes en la hora q ocupan
     def _build_calendar_widgets(self):
         header = tk.Frame(self.calendar_frame)
         header.pack(fill="x", padx=4, pady=2)
@@ -278,6 +282,8 @@ class PlannerGUI:
 
             if self._is_day_occupied(dt):
                 btn.configure(bg="#ffcccc")
+            elif dt == date.today() and not self._is_day_occupied(dt):
+                btn.configure(bg="#656dff")
             else:
                 btn.configure(bg="#ccffcc")
 
