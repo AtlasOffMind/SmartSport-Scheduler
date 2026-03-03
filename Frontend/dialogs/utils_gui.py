@@ -1,6 +1,6 @@
 import tkinter as tk
 from dataclasses import dataclass
-
+from datetime import datetime
 
 @dataclass
 class Utils_Gui:
@@ -21,3 +21,19 @@ class Utils_Gui:
         y = (screen_h - h) // 2
 
         window.geometry(f"{w}x{h}+{x}+{y}")
+        
+    @staticmethod
+    def _show_errors_dialog(errors: list) -> str:
+        """Muestra una ventana con todos los errores acumulados"""
+        error_message = "\n".join([f"• {error}" for error in errors])
+        return error_message
+    
+    @staticmethod
+    def is_date_valid(start,end):
+        day_start: datetime = datetime(start.year, start.month, start.day, 7, 0)
+        day_end: datetime = datetime(start.year, start.month, start.day, 22, 0)
+
+        if not isinstance(start, datetime) or not isinstance(end, datetime) or start >= end or start < day_start or end > day_end:
+            return False
+
+        

@@ -17,7 +17,7 @@ from backend import (
     DecisionRequired,
 )
 
-from .dialogs import MultiInputDialog, ResourceSelectorDialog
+from .dialogs import MultiInputDialog, ResourceSelectorDialog, Utils_Gui
 
 
 class PlannerGUI:
@@ -54,14 +54,9 @@ class PlannerGUI:
             toolbar.columnconfigure(idx, weight=1)
 
         # ===== CONTENT AREA (Row 1) =====
-        # Title of the listboxes
-        self.events_label = tk.Label(root, text="Global events", font=(12))
-        self.events_label.grid(row=1, column=0, columnspan=7, pady=(6, 0), sticky="n")
-
         # Events list (main area). Make it expand with the window.
         self.events_listbox = tk.Listbox(root, font=8, width=80, height=15)
-        self.events_listbox.grid(
-            row=1, column=0, columnspan=7, padx=8, pady=8, sticky="nsew"
+        self.events_listbox.grid(row=1, column=0, columnspan=7, padx=8, pady=8, sticky="nsew"
         )
 
         # Calendar area on the right
@@ -80,6 +75,7 @@ class PlannerGUI:
         self._render_calendar()
 
         self.refresh()
+        
     # Aprobado x Chayanne
     def refresh(self):
         self.events_listbox.delete(0, tk.END)
@@ -87,61 +83,72 @@ class PlannerGUI:
             self.events_listbox.insert(tk.END, dct["name"])
         self._render_calendar()
 
+
+    # arreglar este evento de manera q tenga una clase en el Backend para revisar los errores (no se si lo pueda hacer)
     # Aprobado x Chayanne
     def add_event_dialog(self):
-        name = simpledialog.askstring("Event name", "Name:")
+        f_name = False
+        name = self.add_name()
         if not name:
             return
-
-        accepted_s = False
-        date = MultiInputDialog(self.root, "Event Start")
-        if not date.result:
-            return
-        s_y, s_m, s_d, s_h, s_min = date.result
-        accepted_s = date.accepted
-
-        accepted_e = False
-        date = MultiInputDialog(self.root, "Event End")
-        if not date.result:
-            return
-        e_y, e_m, e_d, e_h, e_min = date.result
-        accepted_e = date.accepted
-
-# TODO mostrar todos los errores
+        else:
+            f_name = True
+        
+        f_date = False
+        while not f_date:
+            start = self.add_date("Event Start")
+            if not start:
+                return
+            
+            end = self.add_date("Event End")
+            if not end:
+                return
+            
+            try:
+               f_date =  Utils_Gui.is_date_valid(start,end)
+               if not f_date:
+                   raise ValueError("That's not a valid date")
+            except ValueError as ex:
+                mesage_text = Utils_Gui._show_errors_dialog([str(ex)])
+                messagebox.showerror("Date error", mesage_text)
+        
+        if f_name and f_date:
+            resources = self.add_resources()   
+            
+        # validate using planner.is_valid
+        event = Event(name, start, end, resources)
         try:
-            start = datetime(s_y, s_m, s_d, s_h, s_min)
-            end = datetime(e_y, e_m, e_d, e_h, e_min)
-        except Exception as ex:
-            messagebox.showerror("Invalid date", str(ex))
+            self.planner.add_events(event)
+        except ValueError as ex:
+            Utils_Gui._show_errors_dialog([str(ex)])
             return
+        except DecisionRequired as d:
+            decision = messagebox.askyesno(
+                "Needed confirmation", f"{str(d)} \n Do you want to reewrite it?"
+            )
+            if decision:
+                self.planner.force_add(event)
 
+        self.refresh()
+        
+    def add_name(self) -> str:
+        name = simpledialog.askstring("Event name", "Name:")
+        return name
+    
+    def add_date(self, event_name) -> datetime:
+        date = MultiInputDialog(self.root, event_name)
+        return date.result 
+
+    def add_resources(self) -> dict:  
         resources = {}
 
-        accepted_r = False
         dialog = ResourceSelectorDialog(
             self.root, self.planner._resources, self.planner.requires
         )
 
-        if dialog.result:
-            resources = dialog.result
-            accepted_r = dialog.accepted
-
-        # validate using planner.is_valid
-        if all((accepted_s, accepted_e, accepted_r)):
-            event = Event(name, start, end, resources)
-            try:
-                self.planner.add_events(event)
-            except ValueError as ex:
-                messagebox.showerror("Exception: ", str(ex))
-                return
-            except DecisionRequired as d:
-                decision = messagebox.askyesno(
-                    "Needed confirmation", f"{str(d)} \n Do you want to reewrite it?"
-                )
-                if decision:
-                    self.planner.force_add(event)
-
-        self.refresh()
+        if not dialog.result:
+            return
+        return dialog.result
 
     # Aprobado x Chayanne
     def delete_selected(self):

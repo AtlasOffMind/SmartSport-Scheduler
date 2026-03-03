@@ -15,8 +15,6 @@ class ResourceSelectorDialog(tk.Toplevel):
     def __init__(self, parent, resources, planner_requires):
         super().__init__(parent)
 
-        self.accepted = False
-
         self.global_resources = resources
         self.global_requires = planner_requires
 
@@ -128,8 +126,6 @@ class ResourceSelectorDialog(tk.Toplevel):
             if not quantity_dialog.accepted:
                 return
             self.result = quantity_dialog.result_resources
-
-        self.accepted = True
         self.destroy()
 
     def refresh_list(self):

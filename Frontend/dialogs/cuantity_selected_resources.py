@@ -30,8 +30,9 @@ class CuantitySelectedResources(tk.Toplevel):
             side="left", expand=True
         )
         tk.Label(
-            header_frame, text="Cantidad disponible", font=("Arial", 10, "bold")
-        ).pack(side="left", padx=20)
+            header_frame, text="Cantidad disponible", font=("Arial", 10, "bold")).pack(
+            side="left", padx=20
+        )
         tk.Label(header_frame, text="Cantidad a usar", font=("Arial", 10, "bold")).pack(
             side="left", padx=20
         )

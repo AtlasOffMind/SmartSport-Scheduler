@@ -11,16 +11,15 @@ class MultiInputDialog(tk.Toplevel):
     def __init__(self, parent, title: str):
         super().__init__(parent)
 
-        self.accepted = False
         self.result = None
         self.title(title)
 
         self.withdraw()
-        self.geometry("300x200")
+        self.geometry("350x250")
         Utils_Gui.center_window(self)
         self.deiconify()
 
-        self.resizable(False, False)
+        self.resizable(True, True)
 
         # Obtener valores actuales
         now = datetime.now()
@@ -30,17 +29,18 @@ class MultiInputDialog(tk.Toplevel):
         tk.Label(self, text="day").grid(row=4, column=0, padx=10, pady=5)
         tk.Label(self, text="hour").grid(row=0, column=1, padx=10, pady=5)
         tk.Label(self, text="min").grid(row=2, column=1, padx=10, pady=5)
+        
+        if title == "Event Start":
+            tk.Label(self, text="(Open at 7am)").grid(row=1, column=2, padx=0, pady=5)
+        if title == "Event End":
+            tk.Label(self, text="(Close at 22pm)").grid(row=1, column=2, padx=0, pady=5)
+            
 
         # Spinbox para año
         self.year_entry = tk.Spinbox(
-            self,
-            from_= 1900,
-            to=2100,
-            width=10,
-            wrap=False,
-            command=self._update_day_range
+            self, from_=1900, to=2100, width=10, wrap=False, command=self._update_day_range,
         )
-        
+
         # Spinbox para mes
         self.month_entry = tk.Spinbox(
             self, from_=1, to=12, width=10, wrap=True, command=self._update_day_range
@@ -65,6 +65,8 @@ class MultiInputDialog(tk.Toplevel):
         tk.Button(self, text="Aceptar", command=self._on_ok).grid(
             row=7, column=1, columnspan=2, pady=15
         )
+        
+        
 
         # comportamiento modal
         self.transient(parent)
@@ -89,16 +91,36 @@ class MultiInputDialog(tk.Toplevel):
             pass
 
     def _on_ok(self):
+        errors = []
         try:
             year = int(self.year_entry.get())
+        except ValueError as ve:
+            errors.append(ve)
+        try: 
             month = int(self.month_entry.get())
+        except ValueError as ve:
+            errors.append(ve)
+        try:
             day = int(self.day_entry.get())
+        except ValueError as ve:
+            errors.append(ve)
+        try:
             hour = int(self.hour_entry.get())
+        except ValueError as ve:
+            errors.append(ve)
+        try:
             min_val = int(self.min_entry.get())
-        except ValueError:
-            messagebox.showerror("Invalid date", "Invalid date values")
+        except ValueError as ve:
+            errors.append(ve)
+        try:
+            dtime = datetime(year, month, day, hour, min_val)
+        except Exception as ve:
+            errors.append(ve)
+            err_message = Utils_Gui._show_errors_dialog(errors)
+            messagebox.showerror("Errores de validación", err_message)
             return
 
-        self.result = (year, month, day, hour, min_val)
-        self.accepted = True
+        self.result = dtime
         self.destroy()
+
+
