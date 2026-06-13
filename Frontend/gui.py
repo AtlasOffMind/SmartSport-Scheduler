@@ -38,6 +38,8 @@ class PlannerGUI:
         toolbar = tk.Frame(root, relief="raised", bd=1)
         toolbar.grid(row=0, column=0, columnspan=8, sticky="ew", padx=0, pady=0)
 
+        # todo
+        # Agregar un boton con la capacidad de Editar un evento seleccionado
         buttons = [
             ("Refresh", self.refresh),
             ("Add Event", self.add_event_dialog),
@@ -59,11 +61,31 @@ class PlannerGUI:
         self.events_listbox.grid(row=1, column=0, columnspan=7, padx=8, pady=8, sticky="nsew"
         )
 
-        # Calendar area on the right
-        self.calendar_frame = tk.Frame(root, bd=1, relief="sunken")
-        self.calendar_frame.grid(
+        # Calendar area on the right (split into calendar + info panel)
+        calendar_container = tk.Frame(root)
+        calendar_container.grid(
             row=1, column=7, sticky="nsew", padx=8, pady=8
         )
+        calendar_container.rowconfigure(0, weight=1)
+        calendar_container.rowconfigure(1, weight=0)
+        calendar_container.columnconfigure(0, weight=1)
+
+        # Calendar frame
+        self.calendar_frame = tk.Frame(calendar_container, bd=1, relief="sunken")
+        self.calendar_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Info panel (below calendar)
+        self.info_frame = tk.Frame(calendar_container, bd=1, relief="sunken", bg="#f0f0f0")
+        self.info_frame.grid(row=1, column=0, sticky="ew", pady=(4, 0))
+
+        # Title for info panel
+        self.info_title = tk.Label(self.info_frame, text="Selecciona un día", font=("Arial", 9, "bold"), bg="#f0f0f0")
+        self.info_title.pack(fill="x", padx=4, pady=(4, 2))
+
+        # Text widget para mostrar eventos del día
+        self.info_text = tk.Text(self.info_frame, height=8, width=25, font=("Arial", 8), wrap="word")
+        self.info_text.pack(fill="both", expand=True, padx=4, pady=4)
+        self.info_text.config(state="disabled")
 
         # calendar state
         today = date.today()
@@ -83,8 +105,11 @@ class PlannerGUI:
             self.events_listbox.insert(tk.END, dct["name"])
         self._render_calendar()
 
-
+    # todo:
     # arreglar este evento de manera q tenga una clase en el Backend para revisar los errores (no se si lo pueda hacer)
+    # hacer la revision de errores mas modularmente, osea mas espaciada para poder dar errores mas especificos y corregir otras implementaciones q tienen q
+    # ver con el tema de tener dos o mas eventos en una misma fecha
+    # Agregar la capacidad de rentar mas de un dia seguido, en una sola guardada   
     # Aprobado x Chayanne
     def add_event_dialog(self):
         f_name = False
@@ -120,7 +145,8 @@ class PlannerGUI:
         try:
             self.planner.add_events(event)
         except ValueError as ex:
-            Utils_Gui._show_errors_dialog([str(ex)])
+            error_mesage = Utils_Gui._show_errors_dialog([str(ex)])
+            messagebox.showerror("Adding event error", error_mesage)
             return
         except DecisionRequired as d:
             decision = messagebox.askyesno(
@@ -231,9 +257,6 @@ class PlannerGUI:
     # enderegion
 
     # ------------------ Calendar helpers ------------------
-
-    # TODO arreglar el calendario para q en la parte de abajo salgan las horas predeterminadas del dia y
-    # q cuando toques un dia te salgan los eventos correspondientes en la hora q ocupan
     def _build_calendar_widgets(self):
         header = tk.Frame(self.calendar_frame)
         header.pack(fill="x", padx=4, pady=2)
@@ -326,17 +349,20 @@ class PlannerGUI:
             for ev in self.planner.events.values()
             if ev.start.date() <= dt <= ev.end.date()
         ]
+
+        # Actualizar el panel de información
+        self.info_title.config(text=f"Eventos del {dt.strftime('%d/%m/%Y')}")
+        self.info_text.config(state="normal")
+        self.info_text.delete(1.0, tk.END)
+
         if not evs:
-            messagebox.showinfo(
-                "Events on {0}".format(dt.isoformat()), "No events on this day"
-            )
-            return
-        lines = []
-        for ev in evs:
-            lines.append(
-                f"{ev.name}: {ev.start.strftime('%H:%M')} - {ev.end.strftime('%H:%M')}"
-            )
-        messagebox.showinfo(f"Events on {dt.isoformat()}", "\n".join(lines))
+            self.info_text.insert(tk.END, "No hay eventos\nen este día")
+        else:
+            for ev in evs:
+                evento_info = f"📌 {ev.name}\n   Inicio: {ev.start.strftime('%H:%M')}\n   Fin: {ev.end.strftime('%H:%M')}\n\n"
+                self.info_text.insert(tk.END, evento_info)
+
+        self.info_text.config(state="disabled")
 
     # Aprobado x Chayanne
     def _prev_month(self):

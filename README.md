@@ -2,12 +2,13 @@
 
 Sistema de planificación inteligente para centros deportivos que gestiona eventos, recursos y horarios con validación automática de restricciones.
 
-**Versión:** 1.0  
-**Desarrollado en:** Python 3.x con Tkinter  
-**Estado:** Completo y listo para producción  
-**Disponible como:** Código fuente + Ejecutable Windows (.exe)
-
 ---
+
+ - como lo hice
+ - concepto de eventos 
+ - de entidades
+ - de recursos
+ - hablar de las clases y los metodos 
 
 ## 🚀 Inicio Rápido
 
@@ -27,19 +28,20 @@ py main.py
 
 ## Descripción del Proyecto
 
-SmartSport Scheduler es una aplicación de escritorio diseñada para centros deportivos que permite:
-- Planificar eventos (partidos, entrenamientos, torneos)
-- Gestionar inventario de recursos (canchas, equipamiento deportivo, personal)
-- Validar automáticamente conflictos temporales y de recursos
-- Aplicar reglas de co-requisitos y exclusiones entre recursos
-- Visualizar calendario mensual con disponibilidad de espacios
-- Persistencia de datos con escritura atómica en formato JSON
-- **Ejecutable independiente** sin necesidad de instalar Python
+SmartSport Scheduler es una aplicación creada para gestionar un centro deportivo (el cual es mi dominio). Mi centro deportivo contiene espacios, implementos deportivos, y personal todo el cual se puede alquilar para Planificar eventos (partidos, entrenamientos, torneos).
 
 ---
 
-## Características Principales
+## Historia de como hice el proyecto
 
+Este proyecto de programación empecé a realizarlo desde mas o menos el momento en que lo mandaron, primero busqué sobre cual podria ser mi dominio, mis recursos, y mis eventos. Tiempo despues llegue a la conclusion de que mi dominio seria un centro deportivo, mis recursos serian todas las cosas que puedo ofertar para alquilar en mi centro, y mis eventos serian una peticion valida hecha por el usuario que contendria un nombre y los recursos seleccionados para su realizacion.
+
+Después de analizar toda la idea en la que se basaba el proyecto me dispuse a hacer el proyecto de forma tal que funecionara sin interfaz visual. Creé las clases de Recursos, Eventos, y creé los metodos para realizar la creacion de eventos, las verificaciones, la permanencia, y todos los metodos auxiliares necesarios para hacer que funcionara. Cuando conclui ese borrador del proyecto pase a hacer el apartado visual con TKinter, debo decir que mayormente en esta etapa desarrollando el Frontend del proyecto me apoye mucho en la IA dado que no sabia utilizar TKinter. Luego de haber creado una plantilla visual para el proyecto, comence a hacer las comunicaciones entre el Backend y el Frontend buscando mantener buenas practicas separando lo mas modularmente posible todas las capas del proyecto.
+
+Despues de varios intentos y muchos Feedbacks tenia listo el proyecto, tenia intenciones de realizar otro despliegue del mismo proyecto, pero esta vez usando DJango, pero la verdad me puse a estudiar otras cosas y solo se quedo en una idea.
+
+
+## Características Principales
 ### Sistema de Validación Multicapa
 El planificador valida automáticamente cada evento a través de 4 niveles:
 
@@ -62,15 +64,13 @@ El planificador valida automáticamente cada evento a través de 4 niveles:
    - Ejemplo: "Piscina Olímpica" excluye ["Sacos de Boxeo", "Estrado de Premiaciones"]
 
 ### Interfaz Gráfica Completa
-- **Calendario Interactivo:** Vista mensual con indicadores visuales (rojo = ocupado, verde = libre)
+- **Calendario Interactivo:** Vista mensual con indicadores visuales (rojo = ocupado, verde = libre, azul = día actual)
 - **Gestión de Eventos:** Crear, visualizar, eliminar eventos con diálogos modales
 - **Selección de Recursos:** Sistema de diálogos encadenados con validación en cada paso
 - **Búsqueda de Slots:** Encuentra automáticamente el próximo horario disponible
 - **Persistencia:** Guardar/cargar planificaciones con nombre personalizado
 
 ---
-
-## Arquitectura del Sistema
 
 ### Estructura del Proyecto
 ```
@@ -105,6 +105,7 @@ SmartSport Scheduler/
 ```
 
 ### Ventajas de la Arquitectura Modular
+Aqui hablo de las ventajas de las buenas practicas q tuve en cuenta a medida de la creacion del proyecto.
 
 **Separación de Responsabilidades:**
 - **backend/models/**: Clases de datos puras sin lógica de presentación
@@ -304,9 +305,11 @@ if all((accepted_s, accepted_e, accepted_r)):
 
 ---
 
+
 ## Inventario de Recursos Predefinidos
 
 El sistema viene con 50+ recursos configurados para un centro deportivo completo:
+
 
 ### Espacios (cantidad: 1 cada uno)
 - Canchas: Football, Tenis, Basket (techada/aire libre), FootSal, Voleibol, Badminton, Squash
@@ -325,24 +328,6 @@ El sistema viene con 50+ recursos configurados para un centro deportivo completo
 - Salvavidas (16)
 - Comentaristas (6)
 - Ambulancias (2)
-
----
-
-## Requisitos del Sistema
-
-### Para ejecutar desde código fuente:
-- **Python:** 3.10 o superior
-- **Dependencias:** Solo bibliotecas estándar de Python
-  - `tkinter` (incluido con Python en Windows/macOS)
-  - `dataclasses`, `datetime`, `json`, `pathlib`
-- **Sistema Operativo:** Windows, macOS, Linux
-
-### Para usar el ejecutable (.exe):
-- **Python:** NO requerido
-- **Sistema Operativo:** Windows 7, 8, 10, 11
-- **Espacio en disco:** ~15 MB (10 MB exe + 5 MB datos)
-- **RAM:** Mínimo 100 MB
-- **Permisos:** Puede requerir aprobación de Windows Defender en primera ejecución
 
 ---
 
@@ -416,6 +401,12 @@ pyinstaller --onefile --windowed --name "SmartSport Scheduler" --add-data "data;
 
 ---
 
+En el SmartSport Scheduler se pueden gestionar, y organizar los eventos que se puedan realizar según el inventario del centro. Para cada evento se puede hacer una peticion de creacion, dicha peticion sera pasada por varias verificaciones para ver si se puede realizar el evento en la fecha fijada y con el inventario pedido. No se pueden crear eventos que duren varios dias, porque el centro deportivo debe apoyar al ahorro energetico y solo se admiten peticiones de eventos que esten entre las 7am y las 10pm, si se desea alquilar algun espacio para mas de un dia, debe volver a hacer la petición de creación para cada dia que desee realizarlo.
+
+En lo siguiente dejo una pequeña guia de como usar la aplicación:
+
+---
+
 ## Guía de Uso
 
 ### Crear un Evento
@@ -471,6 +462,7 @@ Si el evento ya existe, se preguntará si desea sobrescribirlo.
 ---
 
 ## Estructura de Datos JSON
+Esta es la estructura de guardado de cada evento q se guarde.
 
 Ejemplo de archivo guardado:
 ```json
@@ -499,11 +491,7 @@ Ejemplo de archivo guardado:
 ```
 
 ## Solución de Problemas
-
-### Error: "ModuleNotFoundError: No module named 'backend'"
-**Causa:** Python no encuentra los módulos del proyecto  
-**Solución:** Ejecutar siempre desde la raíz del proyecto con `py main.py`  
-**Alternativa:** Verificar que `__init__.py` existe en `backend/` y `Frontend/`
+Estas son algunas de las posibles causas por las cuales un evento no es valido
 
 ### Evento válido se rechaza
 **Verificar:**
@@ -517,31 +505,11 @@ Ejemplo de archivo guardado:
 **Causa:** Usuario cerró ventana en lugar de presionar "Aceptar"  
 **Comportamiento esperado:** El flujo se cancela y vuelve a ventana principal
 
-### Ejecutable (.exe) bloqueado por Windows Defender
-**Causa:** Windows marca ejecutables desconocidos como potencialmente peligrosos  
-**Solución:**
-1. Hacer clic en "Más información"
-2. Seleccionar "Ejecutar de todos modos"
-3. (Opcional) Agregar excepción en Windows Defender para `SmartSport Scheduler.exe`
-
-**Nota:** Es un falso positivo común en ejecutables creados con PyInstaller
-
-### El .exe tarda mucho en iniciar
-**Causa normal:** Primera ejecución (antivirus escaneando)  
-**Solución:** Esperar ~5-10 segundos. Ejecuciones posteriores serán más rápidas
-
-### Error al generar .exe con PyInstaller
-**Verificar:**
-- PyInstaller instalado: `pip install pyinstaller`
-- Ejecutar desde raíz del proyecto
-- No tener el .exe anterior abierto
-- Cerrar todas las instancias de la aplicación
-
 ---
 
 ## Créditos
 
-**Desarrollado por:** Gerardo Javier Pujol Suarez 
+**Desarrollado por:** Gerardo Javier Pujol Suárez 
 **Año:** 2025  
 
 ---

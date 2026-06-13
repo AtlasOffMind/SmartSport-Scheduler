@@ -35,5 +35,5 @@ class Utils_Gui:
 
         if not isinstance(start, datetime) or not isinstance(end, datetime) or start >= end or start < day_start or end > day_end:
             return False
-
+        return True
         

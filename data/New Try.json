@@ -1,0 +1,343 @@
+{
+  "resources": {
+    "Cancha de Football": {
+      "name": "Cancha de Football",
+      "amount": 1
+    },
+    "Cancha de Tenis": {
+      "name": "Cancha de Tenis",
+      "amount": 1
+    },
+    "Cancha de Basket (techada)": {
+      "name": "Cancha de Basket (techada)",
+      "amount": 1
+    },
+    "Cancha de Basket (aire libre)": {
+      "name": "Cancha de Basket (aire libre)",
+      "amount": 1
+    },
+    "Cancha de FootSal": {
+      "name": "Cancha de FootSal",
+      "amount": 1
+    },
+    "Cancha de Boleyball": {
+      "name": "Cancha de Boleyball",
+      "amount": 1
+    },
+    "Cancha de Badmintong": {
+      "name": "Cancha de Badmintong",
+      "amount": 1
+    },
+    "Cancha de Cancha": {
+      "name": "Cancha de Cancha",
+      "amount": 1
+    },
+    "Piscina Olimpica": {
+      "name": "Piscina Olimpica",
+      "amount": 1
+    },
+    "Habitacion para juegos de mesa": {
+      "name": "Habitacion para juegos de mesa",
+      "amount": 1
+    },
+    "Habitacion con Colchon": {
+      "name": "Habitacion con Colchon",
+      "amount": 1
+    },
+    "Pista de Carreras": {
+      "name": "Pista de Carreras",
+      "amount": 1
+    },
+    "Biosaludable (techado)": {
+      "name": "Biosaludable (techado)",
+      "amount": 1
+    },
+    "Biosaludable (aire libre)": {
+      "name": "Biosaludable (aire libre)",
+      "amount": 1
+    },
+    "Estadio de BaseBall": {
+      "name": "Estadio de BaseBall",
+      "amount": 1
+    },
+    "Ring de boxeo": {
+      "name": "Estadio de BaseBall",
+      "amount": 1
+    },
+    "Pelota de Football": {
+      "name": "Pelota de Football",
+      "amount": 15
+    },
+    "Pelota de Footsal": {
+      "name": "Pelota de Footsal",
+      "amount": 15
+    },
+    "Pelota de Tenis": {
+      "name": "Pelota de Tenis",
+      "amount": 50
+    },
+    "Pelota de Tenis de Mesa": {
+      "name": "Pelota de Tenis de Mesa",
+      "amount": 50
+    },
+    "Pelota de Boleyball": {
+      "name": "Pelota de Boleyball",
+      "amount": 15
+    },
+    "Pelota de Basket": {
+      "name": "Pelota de Basket",
+      "amount": 15
+    },
+    "Pelota de Cancha": {
+      "name": "Pelota de Cancha",
+      "amount": 15
+    },
+    "Pelota de Badmintong": {
+      "name": "Pelota de Badmintong",
+      "amount": 15
+    },
+    "Pelota de Baseball": {
+      "name": "Pelota de Baseball",
+      "amount": 30
+    },
+    "Raquetas de Cancha": {
+      "name": "Raquetas de Cancha",
+      "amount": 6
+    },
+    "Raquetas de Badmintong": {
+      "name": "Raquetas de Badmintong",
+      "amount": 6
+    },
+    "Raquetas de Tenis": {
+      "name": "Raquetas de Tenis",
+      "amount": 6
+    },
+    "Raquetas de Tenis de Mesa": {
+      "name": "Raquetas de Tenis de Mesa",
+      "amount": 6
+    },
+    "Bates de BaseBall": {
+      "name": "Bates de BaseBall",
+      "amount": 30
+    },
+    "Guantes de BaseBall": {
+      "name": "Guantes de BaseBall",
+      "amount": 30
+    },
+    "Guantes de Boxeo": {
+      "name": "Guantes de Boxeo",
+      "amount": 30
+    },
+    "Protectores de BaseBall": {
+      "name": "Protectores de BaseBall",
+      "amount": 30
+    },
+    "Cascos de BaseBall": {
+      "name": "Cascos de BaseBall",
+      "amount": 30
+    },
+    "Cascos de Boxeo": {
+      "name": "Cascos de Boxeo",
+      "amount": 30
+    },
+    "Protectores de Karate": {
+      "name": "Protectores de Karate",
+      "amount": 30
+    },
+    "Cascos de Karate": {
+      "name": "Cascos de Karate",
+      "amount": 30
+    },
+    "Protectores de Taekwando": {
+      "name": "Protectores de Taekwando",
+      "amount": 30
+    },
+    "Cascos de Taekwando": {
+      "name": "Cascos de Taekwando",
+      "amount": 30
+    },
+    "Boyas": {
+      "name": "Boyas",
+      "amount": 16
+    },
+    "Sacos de Boxeo": {
+      "name": "Sacos de Boxeo",
+      "amount": 4
+    },
+    "Estrado de Premiaciones": {
+      "name": "Estrado de Premiaciones",
+      "amount": 4
+    },
+    "Altavoces": {
+      "name": "Altavoces",
+      "amount": 16
+    },
+    "Microfonos": {
+      "name": "Microfonos",
+      "amount": 8
+    },
+    "Mesa de PingPong": {
+      "name": "Mesa de PingPong",
+      "amount": 8
+    },
+    "Tablero de ajedrez": {
+      "name": "Tablero de ajedrez",
+      "amount": 8
+    },
+    "Arbitro": {
+      "name": "Arbitro",
+      "amount": 5
+    },
+    "Personal de primeros auxilios": {
+      "name": "Personal de primeros auxilios",
+      "amount": 5
+    },
+    "Salva Vidas": {
+      "name": "Salva Vidas",
+      "amount": 16
+    },
+    "Ambulacia": {
+      "name": "Ambulacia",
+      "amount": 2
+    },
+    "Comentaristas": {
+      "name": "Comentaristas",
+      "amount": 6
+    }
+  },
+  "events": {
+    "iohib": {
+      "name": "iohib",
+      "start": "2026-03-04T08:00:00",
+      "end": "2026-03-04T09:00:00",
+      "resources": {
+        "Cancha de Football": 1,
+        "Arbitro": 1,
+        "Pelota de Football": 1,
+        "Personal de primeros auxilios": 1
+      }
+    }
+  },
+  "requires": {
+    "Cancha de Football": [
+      "Arbitro",
+      "Pelota de Football",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de FootSal": [
+      "Arbitro",
+      "Pelota de Footsal",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Basket (techada)": [
+      "Pelota de Basket",
+      "Arbitro"
+    ],
+    "Cancha de Basket (aire libre)": [
+      "Pelota de Basket",
+      "Arbitro"
+    ],
+    "Piscina Olimpica": [
+      "Salva Vidas",
+      "Personal de primeros auxilios"
+    ],
+    "Estadio de BaseBall": [
+      "Arbitro",
+      "Personal de primeros auxilios",
+      "Comentaristas",
+      "Pelota de Baseball",
+      "Bates de BaseBall",
+      "Guantes de BaseBall",
+      "Protectores de BaseBall"
+    ],
+    "Cancha de Boleyball": [
+      "Arbitro",
+      "Pelota de Boleyball",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Badmintong": [
+      "Arbitro",
+      "Pelota de Badmintong",
+      "Raquetas de Badmintong",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Cancha": [
+      "Arbitro",
+      "Pelota de Cancha",
+      "Raquetas de Cancha",
+      "Personal de primeros auxilios"
+    ],
+    "Ring de boxeo": [
+      "Arbitro",
+      "Guantes de Boxeo",
+      "Cascos de Boxeo",
+      "Personal de primeros auxilios"
+    ],
+    "Cancha de Tenis": [
+      "Pelota de Tenis",
+      "Raquetas de Tenis",
+      "Arbitro"
+    ],
+    "Pelota de Football": [
+      "Cancha de Football"
+    ],
+    "Pelota de Footsall": [
+      "Cancha de FootSal"
+    ],
+    "Pelota de Tenis": [
+      "Cancha de Tenis",
+      "Raquetas de Tenis"
+    ],
+    "Mesa de PingPong": [
+      "Raquetas de Tenis de Mesa",
+      "Pelota de Tenis de Mesa",
+      "Ned de Tenis de Mesa",
+      "Habitacion para juegos de mesa"
+    ],
+    "Cascos de Karate": [
+      "Protectores de Karate",
+      "Habitacion con Colchon"
+    ],
+    "Cascos de Taekwando": [
+      "Protectores de Taekwando",
+      "Habitacion con Colchon"
+    ],
+    "Sacos de Boxeo": [
+      "Guantes de Boxeo",
+      "Cascos de Boxeo"
+    ]
+  },
+  "excludes": {
+    "Piscina Olimpica": [
+      "Sacos de Boxeo",
+      "Estrado de Premiaciones"
+    ],
+    "Cascos de Karate": [
+      "Cascos de Taekwando",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Cascos de Taekwando": [
+      "Cascos de Karate",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Protectores de Taekwando": [
+      "Protectores de Karate",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Protectores de Karate": [
+      "Protectores de Taekwando",
+      "Cascos de Boxeo",
+      "Guantes de Boxeo"
+    ],
+    "Cascos de Boxeo": [
+      "Protectores de Taekwando",
+      "Cascos de Taekwando",
+      "Cascos de Karate",
+      "Protectores de Taekwando",
+      "Protectores de Karate"
+    ]
+  }
+}
