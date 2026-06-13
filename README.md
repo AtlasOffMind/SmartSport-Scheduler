@@ -105,7 +105,7 @@ SmartSport Scheduler/
 ```
 
 ### Ventajas de la Arquitectura Modular
-Aqui hablo de las ventajas de las buenas practicas q tuve en cuenta a medida de la creacion del proyecto.
+Aqui hablo de las ventajas de las buenas practicas que tuve en cuenta a medida de la creacion del proyecto.
 
 **Separación de Responsabilidades:**
 - **backend/models/**: Clases de datos puras sin lógica de presentación
@@ -462,7 +462,7 @@ Si el evento ya existe, se preguntará si desea sobrescribirlo.
 ---
 
 ## Estructura de Datos JSON
-Esta es la estructura de guardado de cada evento q se guarde.
+Esta es la estructura de guardado de cada evento que se guarde.
 
 Ejemplo de archivo guardado:
 ```json
